@@ -1,0 +1,608 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Retro Terminal Portfolio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #2b2b2b;
+            background-image: linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222),
+                              linear-gradient(45deg, #222 25%, transparent 25%, transparent 75%, #222 75%, #222);
+            background-size: 20px 20px;
+            background-position: 0 0, 10px 10px;
+            color: white;
+            font-family: 'VT323', monospace;
+            display: flex;
+            padding: 20px;
+            padding-top: 70px;
+            transition: all 0.5s ease;
+            cursor: url('https://cur.cursors-4u.net/games/gam-4/gam372.cur'), auto;
+            position: relative;
+        }
+
+        button, a, input {
+            cursor: url('https://cur.cursors-4u.net/games/gam-4/gam372.cur'), pointer;
+        }
+
+        /* TOP BANNER CAT EYES */
+        .top-eyes-container {
+            position: absolute;
+            top: 18px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 25px;
+            z-index: 10;
+        }
+
+        .eye {
+            width: 32px;
+            height: 18px;
+            background-color: #ffffff;
+            border-radius: 70% 15% 70% 15%;
+            transform: rotate(-5deg);
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+            overflow: hidden;
+            transition: background-color 0.4s ease, box-shadow 0.4s ease;
+        }
+
+        .eye:last-child {
+            border-radius: 15% 70% 15% 70%;
+            transform: rotate(5deg);
+        }
+
+        .pupil {
+            width: 4px;
+            height: 14px;
+            background-color: #000000;
+            border-radius: 50%;
+            position: absolute;
+            transition: transform 0.05s ease-out;
+        }
+
+        .theme-btn {
+            position: absolute;
+            top: 20px;
+            right: 30px;
+            background-color: black;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            padding: 10px 15px;
+            border: 3px solid white;
+            border-radius: 8px;
+            text-transform: uppercase;
+            transition: all 0.2s;
+            z-index: 10;
+        }
+
+        .theme-btn:hover {
+            background-color: white;
+            color: black;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            width: 250px;
+            margin-right: 20px;
+        }
+
+        .profile-icon {
+            position: relative;
+            margin: 0 auto 15px auto;
+            width: 120px;
+            height: 120px;
+            background-color: black;
+            border: 4px solid white;
+            border-radius: 50%;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .nav-header {
+            font-family: 'Press Start 2P', cursive;
+            font-size: 14px;
+            color: #ffffff;
+            text-transform: uppercase;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .menu-btn {
+            background-color: black;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 13px;
+            padding: 14px;
+            margin-bottom: 12px;
+            border: 4px solid white;
+            border-radius: 10px;
+            text-align: center;
+            text-transform: uppercase;
+            transition: all 0.2s;
+        }
+
+        .menu-btn:hover {
+            background-color: white;
+            color: black;
+            transform: scale(1.02);
+        }
+
+        /* MAIN CRT TERMINAL SCREEN */
+        .main-screen {
+            flex-grow: 1;
+            background-color: #080808;
+            border: 6px solid white;
+            border-radius: 15px;
+            padding: 30px;
+            min-height: 520px;
+            font-size: 22px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.2);
+            transition: border-color 0.5s ease, box-shadow 0.5s ease;
+        }
+
+        /* RETRO CRT SCANLINE OVERLAY */
+        .main-screen::before {
+            content: " ";
+            display: block;
+            position: absolute;
+            top: 0; left: 0; bottom: 0; right: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            background-size: 100% 4px;
+            z-index: 2;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+
+        .screen-title {
+            font-family: 'Press Start 2P', cursive;
+            text-align: center;
+            margin-bottom: 25px;
+            text-transform: uppercase;
+            color: #00ffff;
+            text-shadow: 2px 2px #ff00ff;
+        }
+
+        .content-section { display: none; z-index: 3; }
+        .active { display: block; }
+
+        /* PROJECT CARDS */
+        .project-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+
+        .project-card {
+            border: 2px dashed #00ffff;
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.6);
+            transition: transform 0.2s, border-color 0.2s;
+        }
+
+        .project-card:hover {
+            transform: translateY(-3px);
+            border-color: #ff00ff;
+        }
+
+        .tag {
+            display: inline-block;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 9px;
+            background-color: #333;
+            color: #00ffff;
+            padding: 4px 6px;
+            border-radius: 4px;
+            margin-top: 8px;
+            margin-right: 5px;
+        }
+
+        /* RETRO HEALTH/STAT BARS */
+        .stat-container {
+            margin-bottom: 18px;
+        }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            margin-bottom: 6px;
+        }
+
+        .stat-bar {
+            width: 100%;
+            height: 20px;
+            background-color: #111;
+            border: 3px solid white;
+            border-radius: 5px;
+            overflow: hidden;
+            padding: 2px;
+        }
+
+        .stat-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #00ffff);
+            transition: width 1s ease-in-out;
+        }
+
+        /* INTERACTIVE MINI TERMINAL PROMPT */
+        .terminal-box {
+            margin-top: 20px;
+            border-top: 2px solid #444;
+            padding-top: 15px;
+            z-index: 3;
+            font-family: 'VT323', monospace;
+        }
+
+        .terminal-logs {
+            max-height: 80px;
+            overflow-y: auto;
+            margin-bottom: 8px;
+            color: #aaa;
+            font-size: 18px;
+        }
+
+        .terminal-input-line {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .prompt-symbol {
+            color: #00ff00;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 12px;
+        }
+
+        .cmd-input {
+            background: transparent;
+            border: none;
+            color: #00ff00;
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            outline: none;
+            width: 100%;
+        }
+
+        /* RED ZONE THEME STYLES */
+        body.crimson-theme {
+            background-color: #1a0000;
+            background-image: linear-gradient(45deg, #110000 25%, transparent 25%, transparent 75%, #110000 75%, #110000),
+                              linear-gradient(45deg, #110000 25%, transparent 25%, transparent 75%, #110000 75%, #110000);
+            color: #ffcccc;
+        }
+
+        body.crimson-theme .menu-btn,
+        body.crimson-theme .theme-btn {
+            border-color: #ff0000;
+            color: #ff0000;
+        }
+
+        body.crimson-theme .profile-icon {
+            border-color: #ff0000;
+            box-shadow: 0 0 15px #ff0000;
+        }
+
+        body.crimson-theme .eye {
+            background-color: #ff0000;
+            box-shadow: 0 0 14px #ff0000;
+        }
+
+        body.crimson-theme .menu-btn:hover,
+        body.crimson-theme .theme-btn:hover {
+            background-color: #ff0000;
+            color: black;
+        }
+
+        body.crimson-theme .main-screen {
+            border-color: #ff0000;
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
+        }
+
+        body.crimson-theme .screen-title {
+            color: #ff0000;
+            text-shadow: 2px 2px #550000;
+        }
+
+        body.crimson-theme .stat-fill {
+            background: linear-gradient(90deg, #880000, #ff0000);
+        }
+
+        body.crimson-theme .project-card {
+            border-color: #ff0000;
+        }
+
+        body.crimson-theme .prompt-symbol,
+        body.crimson-theme .cmd-input {
+            color: #ff0000;
+        }
+
+        /* MATRIX OVERDRIVE EASTER EGG */
+        body.matrix-mode {
+            filter: hue-rotate(90deg) contrast(1.5);
+            animation: glitch 0.2s infinite alternate;
+        }
+
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            100% { transform: translate(2px, -2px); }
+        }
+
+        /* MOBILE RESPONSIVENESS */
+        @media (max-width: 768px) {
+            body { flex-direction: column; padding-top: 100px; }
+            .sidebar { width: 100%; margin-right: 0; margin-bottom: 20px; }
+            .theme-btn { top: 60px; right: 50%; transform: translateX(50%); }
+            .project-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- AUDIO FILES -->
+    <audio id="hoverSound" src="hoverSound.mp3"></audio>
+    <audio id="clickSound" src="clickSound.mp3"></audio>
+    <audio id="themeSound" src="themeSound.mp3"></audio>
+
+    <!-- TOP BACKGROUND CAT EYES -->
+    <div class="top-eyes-container">
+        <div class="eye"><div class="pupil"></div></div>
+        <div class="eye"><div class="pupil"></div></div>
+    </div>
+
+    <button class="theme-btn" onclick="toggleTheme()">RED ZONE</button>
+
+    <div class="sidebar">
+        <div class="profile-icon">
+            <img src="2597-aesthetic-black-cat.png" alt="Cat Icon" style="width: 100%; height: auto;">
+        </div>
+
+        <h2 class="nav-header">Navigation</h2>
+
+        <button class="menu-btn" onclick="switchScreen('about')">About Me</button>
+        <button class="menu-btn" onclick="switchScreen('projects')">My Projects</button>
+        <button class="menu-btn" onclick="switchScreen('skills')">Skills / Stats</button>
+    </div>
+
+    <div class="main-screen">
+        <div class="screen-body">
+            <!-- ABOUT ME SECTION -->
+            <div id="about" class="content-section active">
+                <h1 class="screen-title">System Overview</h1>
+                <p>> Welcome to my interactive terminal console.</p>
+                <p>> About me: <em>"A Simple programmer who does this just for fun. Hi, my name is ZONE."</em></p>
+                <p>> Focus: Developing custom 2D games, Python terminal applications, and cybersecurity exploration.</p>
+                <p>> Use the menu on the left or type commands in the interactive console below!</p>
+            </div>
+
+            <!-- PROJECTS SECTION -->
+            <div id="projects" class="content-section">
+                <h1 class="screen-title">Project Vault</h1>
+                <div class="project-grid">
+                    <div class="project-card">
+                        <h3 style="margin: 0; color: #fff;">Terminal RPG</h3>
+                        <p style="font-size: 18px; margin: 8px 0;">Fantasy text role-playing game featuring inventory modifiers and turn-based combat logic.</p>
+                        <span class="tag">PYTHON</span><span class="tag">CLI</span>
+                    </div>
+
+                    <div class="project-card">
+                        <h3 style="margin: 0; color: #fff;">2D Space Shooter</h3>
+                        <p style="font-size: 18px; margin: 8px 0;">Arcade action shooter built with health mechanics, dynamic enemy scaling, and Pygame.</p>
+                        <span class="tag">PYGAME</span><span class="tag">2D</span>
+                    </div>
+
+                    <div class="project-card">
+                        <h3 style="margin: 0; color: #fff;">Snake Game</h3>
+                        <p style="font-size: 18px; margin: 8px 0;">Classic retro Snake built using Python's Turtle graphics library.</p>
+                        <span class="tag">PYTHON</span><span class="tag">TURTLE</span>
+                    </div>
+
+                    <div class="project-card">
+                        <h3 style="margin: 0; color: #fff;">Automation Tools</h3>
+                        <p style="font-size: 18px; margin: 8px 0;">Custom keyboard & macro automation scripts for gameplay assistance.</p>
+                        <span class="tag">PYAUTOGUI</span><span class="tag">MACROS</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SKILLS / STATS SECTION -->
+            <div id="skills" class="content-section">
+                <h1 class="screen-title">Player Attributes</h1>
+
+                <div class="stat-container">
+                    <div class="stat-header"><span>PYTHON DEVELOPMENT</span><span>LVL 40</span></div>
+                    <div class="stat-bar"><div class="stat-fill" style="width: 40%;"></div></div>
+                </div>
+
+                <div class="stat-container">
+                    <div class="stat-header"><span>CYBERSECURITY & TECH</span><span>LVL 15</span></div>
+                    <div class="stat-bar"><div class="stat-fill" style="width: 15%;"></div></div>
+                </div>
+
+                <div class="stat-container">
+                    <div class="stat-header"><span>PYGAME / GAME LOGIC</span><span>LVL 30</span></div>
+                    <div class="stat-bar"><div class="stat-fill" style="width: 30%;"></div></div>
+                </div>
+
+                <div class="stat-container">
+                    <div class="stat-header"><span>C++ ARCHITECTURE</span><span>LVL 12</span></div>
+                    <div class="stat-bar"><div class="stat-fill" style="width: 12%;"></div></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- INTERACTIVE MINI COMMAND PROMPT -->
+        <div class="terminal-box">
+            <div id="terminalLogs" class="terminal-logs">
+                <div>Type <span style="color: #00ffff;">help</span> for a list of terminal commands.</div>
+            </div>
+            <div class="terminal-input-line">
+                <span class="prompt-symbol">></span>
+                <input type="text" id="cmdInput" class="cmd-input" placeholder="enter command..." autocomplete="off">
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // AUDIO ELEMENTS
+        const hoverSound = document.getElementById('hoverSound');
+        const clickSound = document.getElementById('clickSound');
+        const themeSound = document.getElementById('themeSound');
+
+        hoverSound.volume = 0.2;
+        clickSound.volume = 0.3;
+        themeSound.volume = 0.4;
+
+        // BUTTON SOUND HANDLERS
+        const buttons = document.querySelectorAll('button');
+        buttons.forEach(button => {
+            button.addEventListener('mouseenter', () => {
+                hoverSound.currentTime = 0;
+                hoverSound.play().catch(e => {});
+            });
+
+            button.addEventListener('click', () => {
+                if (button.classList.contains('theme-btn')) return;
+                clickSound.currentTime = 0;
+                clickSound.play().catch(e => {});
+            });
+        });
+
+        // CAT EYE MOUSE TRACKING
+        document.addEventListener('mousemove', (e) => {
+            const pupils = document.querySelectorAll('.pupil');
+            pupils.forEach(pupil => {
+                const eye = pupil.parentElement;
+                const rect = eye.getBoundingClientRect();
+                const eyeX = rect.left + rect.width / 2;
+                const eyeY = rect.top + rect.height / 2;
+
+                const angle = Math.atan2(e.clientY - eyeY, e.clientX - eyeX);
+                const distance = Math.min(7, Math.hypot(e.clientX - eyeX, e.clientY - eyeY) / 12);
+
+                const pupilX = Math.cos(angle) * distance;
+                const pupilY = Math.sin(angle) * distance;
+
+                pupil.style.transform = `translate(${pupilX}px, ${pupilY}px)`;
+            });
+        });
+
+        // NAVIGATION SCREEN SWITCHER
+        function switchScreen(screenId) {
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            const target = document.getElementById(screenId);
+            if (target) {
+                target.classList.add('active');
+            }
+        }
+
+        // RED ZONE THEME TOGGLE
+        function toggleTheme() {
+            themeSound.currentTime = 0;
+            themeSound.play().catch(e => {});
+
+            document.body.classList.toggle('crimson-theme');
+
+            const btn = document.querySelector('.theme-btn');
+            if (document.body.classList.contains('crimson-theme')) {
+                btn.innerText = "NORMAL ZONE";
+                logToTerminal("RED ZONE PROTOCOL ACTIVATED.");
+            } else {
+                btn.innerText = "RED ZONE";
+                logToTerminal("Normal mode restored.");
+            }
+        }
+
+        // INTERACTIVE MINI TERMINAL LOGIC
+        const cmdInput = document.getElementById('cmdInput');
+        const terminalLogs = document.getElementById('terminalLogs');
+
+        function logToTerminal(text) {
+            const newLog = document.createElement('div');
+            newLog.innerHTML = text;
+            terminalLogs.appendChild(newLog);
+            terminalLogs.scrollTop = terminalLogs.scrollHeight;
+        }
+
+        cmdInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                const command = cmdInput.value.trim().toLowerCase();
+                logToTerminal(`<span style="color: #fff;">> ${cmdInput.value}</span>`);
+                cmdInput.value = '';
+
+                switch (command) {
+                    case 'help':
+                        logToTerminal("Available: <span style='color: #00ffff;'>about</span>, <span style='color: #00ffff;'>projects</span>, <span style='color: #00ffff;'>skills</span>, <span style='color: #00ffff;'>redzone</span>, <span style='color: #00ffff;'>cat</span>, <span style='color: #00ffff;'>clear</span>");
+                        break;
+                    case 'about':
+                        switchScreen('about');
+                        logToTerminal("Switched to System Overview.");
+                        break;
+                    case 'projects':
+                        switchScreen('projects');
+                        logToTerminal("Switched to Project Vault.");
+                        break;
+                    case 'skills':
+                        switchScreen('skills');
+                        logToTerminal("Switched to Player Attributes.");
+                        break;
+                    case 'redzone':
+                        toggleTheme();
+                        break;
+                    case 'clear':
+                        terminalLogs.innerHTML = '';
+                        break;
+                    case 'cat':
+                        logToTerminal(" ฅ^•ﻌ•^ฅ  Meow! The eyes are watching you.");
+                        break;
+                    case 'matrix':
+                        document.body.classList.toggle('matrix-mode');
+                        logToTerminal("Matrix glitch mode toggled!");
+                        break;
+                    default:
+                        if (command !== '') {
+                            logToTerminal(`Unknown command: '${command}'. Type 'help' for options.`);
+                        }
+                }
+            }
+        });
+
+        // SECRET KONAMI CODE EASTER EGG (↑ ↑ ↓ ↓ ← → ← → B A)
+        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
+        let konamiIndex = 0;
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === konamiCode[konamiIndex] || e.key.toLowerCase() === konamiCode[konamiIndex]) {
+                konamiIndex++;
+                if (konamiIndex === konamiCode.length) {
+                    document.body.classList.toggle('matrix-mode');
+                    logToTerminal("<span style='color: #00ff00; font-weight: bold;'>[SYSTEM OVERDRIVE UNLOCKED!]</span>");
+                    konamiIndex = 0;
+                }
+            } else {
+                konamiIndex = 0;
+            }
+        });
+    </script>
+</body>
+</html>
