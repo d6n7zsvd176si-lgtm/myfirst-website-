@@ -139,7 +139,6 @@
             transform: scale(1.02);
         }
 
-        /* MAIN CRT TERMINAL SCREEN */
         .main-screen {
             flex-grow: 1;
             background-color: #080808;
@@ -157,7 +156,6 @@
             transition: border-color 0.5s ease, box-shadow 0.5s ease;
         }
 
-        /* RETRO CRT SCANLINE OVERLAY */
         .main-screen::before {
             content: " ";
             display: block;
@@ -182,7 +180,6 @@
         .content-section { display: none; z-index: 3; }
         .active { display: block; }
 
-        /* PROJECT CARDS */
         .project-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -194,13 +191,18 @@
             padding: 15px;
             border-radius: 8px;
             background: rgba(0, 0, 0, 0.6);
-            transition: transform 0.2s, border-color 0.2s;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            cursor: url('https://cur.cursors-4u.net/games/gam-4/gam372.cur'), pointer;
         }
 
         .project-card:hover {
             transform: translateY(-3px);
             border-color: #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.4);
         }
+
+        .project-card.playable { border-style: solid; border-color: #00ff00; }
+        .project-card.playable:hover { border-color: #00ff00; box-shadow: 0 0 15px rgba(0, 255, 0, 0.6); }
 
         .tag {
             display: inline-block;
@@ -214,72 +216,25 @@
             margin-right: 5px;
         }
 
-        /* RETRO HEALTH/STAT BARS */
-        .stat-container {
-            margin-bottom: 18px;
-        }
+        .tag.play-tag { background-color: #00ff00; color: black; font-weight: bold; }
 
-        .stat-header {
-            display: flex;
-            justify-content: space-between;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 11px;
-            margin-bottom: 6px;
-        }
+        .stat-container { margin-bottom: 18px; }
+        .stat-header { display: flex; justify-content: space-between; font-family: 'Press Start 2P', cursive; font-size: 11px; margin-bottom: 6px; }
+        .stat-bar { width: 100%; height: 20px; background-color: #111; border: 3px solid white; border-radius: 5px; overflow: hidden; padding: 2px; }
+        .stat-fill { height: 100%; background: linear-gradient(90deg, #00ff00, #00ffff); transition: width 1s ease-in-out; }
 
-        .stat-bar {
-            width: 100%;
-            height: 20px;
-            background-color: #111;
-            border: 3px solid white;
-            border-radius: 5px;
-            overflow: hidden;
-            padding: 2px;
-        }
+        .terminal-box { margin-top: 20px; border-top: 2px solid #444; padding-top: 15px; z-index: 3; font-family: 'VT323', monospace; }
+        .terminal-logs { max-height: 80px; overflow-y: auto; margin-bottom: 8px; color: #aaa; font-size: 18px; }
+        .terminal-input-line { display: flex; align-items: center; gap: 8px; }
+        .prompt-symbol { color: #00ff00; font-family: 'Press Start 2P', cursive; font-size: 12px; }
+        .cmd-input { background: transparent; border: none; color: #00ff00; font-family: 'VT323', monospace; font-size: 22px; outline: none; width: 100%; }
 
-        .stat-fill {
-            height: 100%;
-            background: linear-gradient(90deg, #00ff00, #00ffff);
-            transition: width 1s ease-in-out;
-        }
-
-        /* INTERACTIVE MINI TERMINAL PROMPT */
-        .terminal-box {
-            margin-top: 20px;
-            border-top: 2px solid #444;
-            padding-top: 15px;
-            z-index: 3;
-            font-family: 'VT323', monospace;
-        }
-
-        .terminal-logs {
-            max-height: 80px;
-            overflow-y: auto;
-            margin-bottom: 8px;
-            color: #aaa;
-            font-size: 18px;
-        }
-
-        .terminal-input-line {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .prompt-symbol {
-            color: #00ff00;
-            font-family: 'Press Start 2P', cursive;
-            font-size: 12px;
-        }
-
-        .cmd-input {
-            background: transparent;
-            border: none;
-            color: #00ff00;
-            font-family: 'VT323', monospace;
-            font-size: 22px;
-            outline: none;
-            width: 100%;
+        .canvas-container { display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        canvas {
+            background-color: black;
+            border: 4px solid #00ffff;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.4);
+            image-rendering: pixelated;
         }
 
         /* RED ZONE THEME STYLES */
@@ -289,64 +244,18 @@
                               linear-gradient(45deg, #110000 25%, transparent 25%, transparent 75%, #110000 75%, #110000);
             color: #ffcccc;
         }
+        body.crimson-theme .menu-btn, body.crimson-theme .theme-btn { border-color: #ff0000; color: #ff0000; }
+        body.crimson-theme .profile-icon { border-color: #ff0000; box-shadow: 0 0 15px #ff0000; }
+        body.crimson-theme .eye { background-color: #ff0000; box-shadow: 0 0 14px #ff0000; }
+        body.crimson-theme .menu-btn:hover, body.crimson-theme .theme-btn:hover { background-color: #ff0000; color: black; }
+        body.crimson-theme .main-screen { border-color: #ff0000; box-shadow: 0 0 20px rgba(255, 0, 0, 0.4); }
+        body.crimson-theme .screen-title { color: #ff0000; text-shadow: 2px 2px #550000; }
+        body.crimson-theme .stat-fill { background: linear-gradient(90deg, #880000, #ff0000); }
+        body.crimson-theme .project-card { border-color: #ff0000; }
+        body.crimson-theme .project-card.playable { border-color: #ff4444; }
+        body.crimson-theme .prompt-symbol, body.crimson-theme .cmd-input { color: #ff0000; }
+        body.crimson-theme canvas { border-color: #ff0000; box-shadow: 0 0 15px rgba(255, 0, 0, 0.4); }
 
-        body.crimson-theme .menu-btn,
-        body.crimson-theme .theme-btn {
-            border-color: #ff0000;
-            color: #ff0000;
-        }
-
-        body.crimson-theme .profile-icon {
-            border-color: #ff0000;
-            box-shadow: 0 0 15px #ff0000;
-        }
-
-        body.crimson-theme .eye {
-            background-color: #ff0000;
-            box-shadow: 0 0 14px #ff0000;
-        }
-
-        body.crimson-theme .menu-btn:hover,
-        body.crimson-theme .theme-btn:hover {
-            background-color: #ff0000;
-            color: black;
-        }
-
-        body.crimson-theme .main-screen {
-            border-color: #ff0000;
-            box-shadow: 0 0 20px rgba(255, 0, 0, 0.4);
-        }
-
-        body.crimson-theme .screen-title {
-            color: #ff0000;
-            text-shadow: 2px 2px #550000;
-        }
-
-        body.crimson-theme .stat-fill {
-            background: linear-gradient(90deg, #880000, #ff0000);
-        }
-
-        body.crimson-theme .project-card {
-            border-color: #ff0000;
-        }
-
-        body.crimson-theme .prompt-symbol,
-        body.crimson-theme .cmd-input {
-            color: #ff0000;
-        }
-
-        /* MATRIX OVERDRIVE EASTER EGG */
-        body.matrix-mode {
-            filter: hue-rotate(90deg) contrast(1.5);
-            animation: glitch 0.2s infinite alternate;
-        }
-
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            100% { transform: translate(2px, -2px); }
-        }
-
-        /* MOBILE RESPONSIVENESS */
         @media (max-width: 768px) {
             body { flex-direction: column; padding-top: 100px; }
             .sidebar { width: 100%; margin-right: 0; margin-bottom: 20px; }
@@ -357,12 +266,10 @@
 </head>
 <body>
 
-    <!-- AUDIO FILES -->
     <audio id="hoverSound" src="hoverSound.mp3"></audio>
     <audio id="clickSound" src="clickSound.mp3"></audio>
     <audio id="themeSound" src="themeSound.mp3"></audio>
 
-    <!-- TOP BACKGROUND CAT EYES -->
     <div class="top-eyes-container">
         <div class="eye"><div class="pupil"></div></div>
         <div class="eye"><div class="pupil"></div></div>
@@ -374,9 +281,7 @@
         <div class="profile-icon">
             <img src="2597-aesthetic-black-cat.png" alt="Cat Icon" style="width: 100%; height: auto;">
         </div>
-
         <h2 class="nav-header">Navigation</h2>
-
         <button class="menu-btn" onclick="switchScreen('about')">About Me</button>
         <button class="menu-btn" onclick="switchScreen('projects')">My Projects</button>
         <button class="menu-btn" onclick="switchScreen('skills')">Skills / Stats</button>
@@ -384,7 +289,6 @@
 
     <div class="main-screen">
         <div class="screen-body">
-            <!-- ABOUT ME SECTION -->
             <div id="about" class="content-section active">
                 <h1 class="screen-title">System Overview</h1>
                 <p>> Welcome to my interactive terminal console.</p>
@@ -393,7 +297,6 @@
                 <p>> Use the menu on the left or type commands in the interactive console below!</p>
             </div>
 
-            <!-- PROJECTS SECTION -->
             <div id="projects" class="content-section">
                 <h1 class="screen-title">Project Vault</h1>
                 <div class="project-grid">
@@ -403,16 +306,16 @@
                         <span class="tag">PYTHON</span><span class="tag">CLI</span>
                     </div>
 
-                    <div class="project-card">
+                    <div class="project-card playable" onclick="launchGame('shooter')">
                         <h3 style="margin: 0; color: #fff;">2D Space Shooter</h3>
-                        <p style="font-size: 18px; margin: 8px 0;">Arcade action shooter built with health mechanics, dynamic enemy scaling, and Pygame.</p>
-                        <span class="tag">PYGAME</span><span class="tag">2D</span>
+                        <p style="font-size: 18px; margin: 8px 0;">Arcade action shooter built with health mechanics, dynamic enemy scaling, and Pygame logic.</p>
+                        <span class="tag">PYGAME</span><span class="tag play-tag">> PLAY NOW</span>
                     </div>
 
-                    <div class="project-card">
+                    <div class="project-card playable" onclick="launchGame('snake')">
                         <h3 style="margin: 0; color: #fff;">Snake Game</h3>
-                        <p style="font-size: 18px; margin: 8px 0;">Classic retro Snake built using Python's Turtle graphics library.</p>
-                        <span class="tag">PYTHON</span><span class="tag">TURTLE</span>
+                        <p style="font-size: 18px; margin: 8px 0;">Classic retro Snake built using Python's Turtle graphics library. Ported to HTML5 Canvas.</p>
+                        <span class="tag">PYTHON</span><span class="tag play-tag">> PLAY NOW</span>
                     </div>
 
                     <div class="project-card">
@@ -423,33 +326,26 @@
                 </div>
             </div>
 
-            <!-- SKILLS / STATS SECTION -->
             <div id="skills" class="content-section">
                 <h1 class="screen-title">Player Attributes</h1>
+                <div class="stat-container"><div class="stat-header"><span>PYTHON DEVELOPMENT</span><span>LVL 40</span></div><div class="stat-bar"><div class="stat-fill" style="width: 40%;"></div></div></div>
+                <div class="stat-container"><div class="stat-header"><span>CYBERSECURITY & TECH</span><span>LVL 15</span></div><div class="stat-bar"><div class="stat-fill" style="width: 15%;"></div></div></div>
+                <div class="stat-container"><div class="stat-header"><span>PYGAME / GAME LOGIC</span><span>LVL 30</span></div><div class="stat-bar"><div class="stat-fill" style="width: 30%;"></div></div></div>
+                <div class="stat-container"><div class="stat-header"><span>C++ ARCHITECTURE</span><span>LVL 12</span></div><div class="stat-bar"><div class="stat-fill" style="width: 12%;"></div></div></div>
+            </div>
 
-                <div class="stat-container">
-                    <div class="stat-header"><span>PYTHON DEVELOPMENT</span><span>LVL 40</span></div>
-                    <div class="stat-bar"><div class="stat-fill" style="width: 40%;"></div></div>
-                </div>
-
-                <div class="stat-container">
-                    <div class="stat-header"><span>CYBERSECURITY & TECH</span><span>LVL 15</span></div>
-                    <div class="stat-bar"><div class="stat-fill" style="width: 15%;"></div></div>
-                </div>
-
-                <div class="stat-container">
-                    <div class="stat-header"><span>PYGAME / GAME LOGIC</span><span>LVL 30</span></div>
-                    <div class="stat-bar"><div class="stat-fill" style="width: 30%;"></div></div>
-                </div>
-
-                <div class="stat-container">
-                    <div class="stat-header"><span>C++ ARCHITECTURE</span><span>LVL 17</span></div>
-                    <div class="stat-bar"><div class="stat-fill" style="width: 12%;"></div></div>
+            <div id="game-screen" class="content-section">
+                <h1 class="screen-title" id="game-title">Arcade Mode</h1>
+                <div class="canvas-container">
+                    <canvas id="gameCanvas" width="400" height="400"></canvas>
+                    <div style="margin-top: 15px; text-align: center; width: 400px; display: flex; justify-content: space-between; align-items: center;">
+                        <span id="scoreBoard" style="font-family: 'Press Start 2P', cursive; font-size: 12px; color: #00ff00;">SCORE: 0 | HP: 3</span>
+                        <button class="menu-btn" style="padding: 10px; font-size: 10px; margin: 0;" onclick="switchScreen('projects')">EXIT GAME</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- INTERACTIVE MINI COMMAND PROMPT -->
         <div class="terminal-box">
             <div id="terminalLogs" class="terminal-logs">
                 <div>Type <span style="color: #00ffff;">help</span> for a list of terminal commands.</div>
@@ -462,85 +358,50 @@
     </div>
 
     <script>
-        // AUDIO ELEMENTS
+        // AUDIO & UI SETUP
         const hoverSound = document.getElementById('hoverSound');
         const clickSound = document.getElementById('clickSound');
         const themeSound = document.getElementById('themeSound');
+        hoverSound.volume = 0.2; clickSound.volume = 0.3; themeSound.volume = 0.4;
 
-        hoverSound.volume = 0.2;
-        clickSound.volume = 0.3;
-        themeSound.volume = 0.4;
-
-        // BUTTON SOUND HANDLERS
-        const buttons = document.querySelectorAll('button');
-        buttons.forEach(button => {
-            button.addEventListener('mouseenter', () => {
-                hoverSound.currentTime = 0;
-                hoverSound.play().catch(e => {});
-            });
-
-            button.addEventListener('click', () => {
-                if (button.classList.contains('theme-btn')) return;
-                clickSound.currentTime = 0;
-                clickSound.play().catch(e => {});
-            });
+        document.querySelectorAll('button, .project-card.playable').forEach(element => {
+            element.addEventListener('mouseenter', () => { hoverSound.currentTime = 0; hoverSound.play().catch(e => {}); });
+            element.addEventListener('click', () => { clickSound.currentTime = 0; clickSound.play().catch(e => {}); });
         });
 
-        // CAT EYE MOUSE TRACKING
+        // CAT EYE TRACKING
         document.addEventListener('mousemove', (e) => {
-            const pupils = document.querySelectorAll('.pupil');
-            pupils.forEach(pupil => {
+            document.querySelectorAll('.pupil').forEach(pupil => {
                 const eye = pupil.parentElement;
                 const rect = eye.getBoundingClientRect();
-                const eyeX = rect.left + rect.width / 2;
-                const eyeY = rect.top + rect.height / 2;
-
-                const angle = Math.atan2(e.clientY - eyeY, e.clientX - eyeX);
-                const distance = Math.min(7, Math.hypot(e.clientX - eyeX, e.clientY - eyeY) / 12);
-
-                const pupilX = Math.cos(angle) * distance;
-                const pupilY = Math.sin(angle) * distance;
-
-                pupil.style.transform = `translate(${pupilX}px, ${pupilY}px)`;
+                const angle = Math.atan2(e.clientY - (rect.top + rect.height/2), e.clientX - (rect.left + rect.width/2));
+                const distance = Math.min(7, Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.height/2)) / 12);
+                pupil.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
             });
         });
 
-        // NAVIGATION SCREEN SWITCHER
+        // TERMINAL LOGIC
         function switchScreen(screenId) {
-            document.querySelectorAll('.content-section').forEach(section => {
-                section.classList.remove('active');
-            });
-            const target = document.getElementById(screenId);
-            if (target) {
-                target.classList.add('active');
-            }
+            clearInterval(gameLoop);
+            currentGame = null;
+            document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
         }
 
-        // RED ZONE THEME TOGGLE
         function toggleTheme() {
-            themeSound.currentTime = 0;
-            themeSound.play().catch(e => {});
-
+            themeSound.currentTime = 0; themeSound.play().catch(e => {});
             document.body.classList.toggle('crimson-theme');
-
             const btn = document.querySelector('.theme-btn');
-            if (document.body.classList.contains('crimson-theme')) {
-                btn.innerText = "NORMAL ZONE";
-                logToTerminal("RED ZONE PROTOCOL ACTIVATED.");
-            } else {
-                btn.innerText = "RED ZONE";
-                logToTerminal("Normal mode restored.");
-            }
+            btn.innerText = document.body.classList.contains('crimson-theme') ? "NORMAL ZONE" : "RED ZONE";
+
+            // Update scoreboard color dynamically
+            document.getElementById('scoreBoard').style.color = document.body.classList.contains('crimson-theme') ? "#ff0000" : "#00ff00";
         }
 
-        // INTERACTIVE MINI TERMINAL LOGIC
         const cmdInput = document.getElementById('cmdInput');
         const terminalLogs = document.getElementById('terminalLogs');
-
         function logToTerminal(text) {
-            const newLog = document.createElement('div');
-            newLog.innerHTML = text;
-            terminalLogs.appendChild(newLog);
+            terminalLogs.innerHTML += `<div>${text}</div>`;
             terminalLogs.scrollTop = terminalLogs.scrollHeight;
         }
 
@@ -550,59 +411,309 @@
                 logToTerminal(`<span style="color: #fff;">> ${cmdInput.value}</span>`);
                 cmdInput.value = '';
 
-                switch (command) {
-                    case 'help':
-                        logToTerminal("Available: <span style='color: #00ffff;'>about</span>, <span style='color: #00ffff;'>projects</span>, <span style='color: #00ffff;'>skills</span>, <span style='color: #00ffff;'>redzone</span>, <span style='color: #00ffff;'>cat</span>, <span style='color: #00ffff;'>clear</span>");
-                        break;
-                    case 'about':
-                        switchScreen('about');
-                        logToTerminal("Switched to System Overview.");
-                        break;
-                    case 'projects':
-                        switchScreen('projects');
-                        logToTerminal("Switched to Project Vault.");
-                        break;
-                    case 'skills':
-                        switchScreen('skills');
-                        logToTerminal("Switched to Player Attributes.");
-                        break;
-                    case 'redzone':
-                        toggleTheme();
-                        break;
-                    case 'clear':
-                        terminalLogs.innerHTML = '';
-                        break;
-                    case 'cat':
-                        logToTerminal(" ฅ^•ﻌ•^ฅ  Meow! The eyes are watching you.");
-                        break;
-                    case 'matrix':
-                        document.body.classList.toggle('matrix-mode');
-                        logToTerminal("Matrix glitch mode toggled!");
-                        break;
-                    default:
-                        if (command !== '') {
-                            logToTerminal(`Unknown command: '${command}'. Type 'help' for options.`);
-                        }
-                }
+                if(command === 'help') logToTerminal("Available: about, projects, skills, redzone, cat, clear");
+                else if(command === 'about') switchScreen('about');
+                else if(command === 'projects') switchScreen('projects');
+                else if(command === 'skills') switchScreen('skills');
+                else if(command === 'redzone') toggleTheme();
+                else if(command === 'clear') terminalLogs.innerHTML = '';
+                else if(command === 'cat') logToTerminal(" ฅ^•ﻌ•^ฅ  Meow!");
+                else if(command !== '') logToTerminal(`Unknown command: '${command}'`);
             }
         });
 
-        // SECRET KONAMI CODE EASTER EGG (↑ ↑ ↓ ↓ ← → ← → B A)
-        const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight', 'b', 'a'];
-        let konamiIndex = 0;
+        // ---------------------------------------------------
+        // ARCADE ENGINE (SNAKE & SPACE SHOOTER)
+        // ---------------------------------------------------
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        let gameLoop;
+        let currentGame = null;
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === konamiCode[konamiIndex] || e.key.toLowerCase() === konamiCode[konamiIndex]) {
-                konamiIndex++;
-                if (konamiIndex === konamiCode.length) {
-                    document.body.classList.toggle('matrix-mode');
-                    logToTerminal("<span style='color: #00ff00; font-weight: bold;'>[SYSTEM OVERDRIVE UNLOCKED!]</span>");
-                    konamiIndex = 0;
-                }
+        // Global Key State for continuous movement
+        const keysState = {};
+        window.addEventListener("keydown", function(e) {
+            keysState[e.code] = true;
+            if(currentGame && ["Space","ArrowUp","ArrowDown","ArrowLeft","ArrowRight"].indexOf(e.code) > -1) {
+                e.preventDefault();
+            }
+        }, false);
+        window.addEventListener("keyup", function(e) {
+            keysState[e.code] = false;
+        }, false);
+
+        function launchGame(gameName) {
+            switchScreen('game-screen');
+            currentGame = gameName;
+
+            if (gameName === 'snake') {
+                document.getElementById('game-title').innerText = "SNAKE ALGORITHM";
+                initSnake();
+            } else if (gameName === 'shooter') {
+                document.getElementById('game-title').innerText = "SPACE SHOOTER";
+                initShooter();
+            }
+        }
+
+        // --- SNAKE GAME LOGIC ---
+        let snake, food, dx, dy, snakeScore;
+        const gridSize = 20;
+
+        function initSnake() {
+            clearInterval(gameLoop);
+            snake = [{x: 200, y: 200}, {x: 180, y: 200}, {x: 160, y: 200}];
+            dx = gridSize; dy = 0; snakeScore = 0;
+            document.getElementById('scoreBoard').innerText = "SCORE: " + snakeScore;
+            spawnFood();
+            document.addEventListener('keydown', changeSnakeDirection);
+            gameLoop = setInterval(updateSnake, 100);
+        }
+
+        function spawnFood() {
+            food = {
+                x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
+                y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize
+            };
+        }
+
+        function changeSnakeDirection(event) {
+            if (currentGame !== 'snake') return;
+            const LEFT_KEY = 37, RIGHT_KEY = 39, UP_KEY = 38, DOWN_KEY = 40;
+            const keyPressed = event.keyCode;
+            const goingUp = dy === -gridSize, goingDown = dy === gridSize;
+            const goingRight = dx === gridSize, goingLeft = dx === -gridSize;
+
+            if (keyPressed === LEFT_KEY && !goingRight) { dx = -gridSize; dy = 0; }
+            if (keyPressed === UP_KEY && !goingDown) { dx = 0; dy = -gridSize; }
+            if (keyPressed === RIGHT_KEY && !goingLeft) { dx = gridSize; dy = 0; }
+            if (keyPressed === DOWN_KEY && !goingUp) { dx = 0; dy = gridSize; }
+        }
+
+        function updateSnake() {
+            const head = {x: snake[0].x + dx, y: snake[0].y + dy};
+
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || checkSnakeCollision(head)) {
+                clearInterval(gameLoop);
+                ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
+                ctx.font = "20px 'Press Start 2P'";
+                ctx.textAlign = "center";
+                ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
+                ctx.fillText("CLICK TO RESTART", canvas.width/2, canvas.height/2 + 30);
+                canvas.onclick = () => { if(currentGame === 'snake') initSnake(); };
+                return;
+            }
+
+            snake.unshift(head);
+            if (head.x === food.x && head.y === food.y) {
+                snakeScore += 10;
+                document.getElementById('scoreBoard').innerText = "SCORE: " + snakeScore;
+                spawnFood();
             } else {
-                konamiIndex = 0;
+                snake.pop();
             }
-        });
+            drawSnakeGame();
+        }
+
+        function checkSnakeCollision(head) {
+            for (let i = 1; i < snake.length; i++) {
+                if (head.x === snake[i].x && head.y === snake[i].y) return true;
+            }
+            return false;
+        }
+
+        function drawSnakeGame() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "#ff0000" : "#ff00ff";
+            ctx.fillRect(food.x, food.y, gridSize - 2, gridSize - 2);
+            snake.forEach((part, index) => {
+                if (index === 0) ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "#ff4444" : "#ffffff";
+                else ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "#aa0000" : "#00ffff";
+                ctx.fillRect(part.x, part.y, gridSize - 2, gridSize - 2);
+            });
+        }
+
+        // --- NEW: SPACE SHOOTER (PORTED FROM test graond.py) ---
+        let player_x, player_y, player_size, player_speed, player_hp;
+        let bullets, shoot_cooldown;
+        let enemies, base_enemy_speed, enemy_size;
+        let particles, shooterScore;
+
+        function initShooter() {
+            clearInterval(gameLoop);
+            canvas.onclick = null; // Clear restart clicks
+
+            player_size = 25;
+            player_x = (canvas.width / 2) - (player_size / 2);
+            player_y = canvas.height - 40;
+            player_speed = 5;
+            player_hp = 3;
+
+            bullets = [];
+            shoot_cooldown = 0;
+
+            enemy_size = 25;
+            base_enemy_speed = 2;
+            enemies = [];
+            for (let i = 0; i < 6; i++) {
+                // Space them out exactly like the python code
+                enemies.push({ x: i * 60 + 25, y: -Math.random() * 200 });
+            }
+
+            particles = [];
+            shooterScore = 0;
+
+            updateShooterHUD();
+            gameLoop = setInterval(updateShooter, 1000/60); // Run at 60 FPS
+        }
+
+        function updateShooterHUD() {
+            document.getElementById('scoreBoard').innerText = `SCORE: ${shooterScore} | HP: ${player_hp}`;
+        }
+
+        // AABB Collision Helper
+        function isColliding(r1, r2) {
+            return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x &&
+                   r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
+        }
+
+        function createExplosion(x, y, isPlayerHit) {
+            let count = isPlayerHit ? 25 : 15;
+            for (let i = 0; i < count; i++) {
+                let isCrimson = document.body.classList.contains('crimson-theme');
+
+                // Set colors based on python code and theme
+                let color;
+                if (isPlayerHit) {
+                    color = "#ff0000"; // Red for player hit
+                } else {
+                    color = isCrimson ? (Math.random() > 0.5 ? "#ff4444" : "#ffaa00")
+                                      : (Math.random() > 0.5 ? "#00ffff" : "#ff00ff"); // Cyan/Pink or Red/Orange
+                }
+
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    size: Math.random() * 4 + 2,
+                    color: color
+                });
+            }
+        }
+
+        function updateShooter() {
+            if (player_hp <= 0) {
+                clearInterval(gameLoop);
+                ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
+                ctx.font = "20px 'Press Start 2P'";
+                ctx.textAlign = "center";
+                ctx.fillText("SYSTEM FAILURE", canvas.width/2, canvas.height/2);
+                ctx.fillText("CLICK TO REBOOT", canvas.width/2, canvas.height/2 + 30);
+                canvas.onclick = () => { if(currentGame === 'shooter') initShooter(); };
+                return;
+            }
+
+            // 1. INPUTS
+            if ((keysState['ArrowLeft'] || keysState['KeyA']) && player_x > 0) player_x -= player_speed;
+            if ((keysState['ArrowRight'] || keysState['KeyD']) && player_x < canvas.width - player_size) player_x += player_speed;
+
+            if (shoot_cooldown > 0) shoot_cooldown--;
+
+            if (keysState['Space'] && shoot_cooldown === 0) {
+                bullets.push({ x: player_x + (player_size / 2) - 2.5, y: player_y });
+                shoot_cooldown = 15; // Python cooldown logic
+            }
+
+            // 2. MOVE BULLETS
+            for (let i = bullets.length - 1; i >= 0; i--) {
+                bullets[i].y -= 7;
+                if (bullets[i].y < 0) bullets.splice(i, 1);
+            }
+
+            // 3. MOVE ENEMIES (Progressive Difficulty Curve!)
+            let current_enemy_speed = base_enemy_speed + Math.floor(shooterScore / 10);
+
+            for (let i = 0; i < enemies.length; i++) {
+                enemies[i].y += current_enemy_speed;
+                if (enemies[i].y > canvas.height) {
+                    enemies[i].y = -50;
+                }
+            }
+
+            // 4. UPDATE PARTICLES
+            for (let i = particles.length - 1; i >= 0; i--) {
+                particles[i].x += particles[i].vx;
+                particles[i].y += particles[i].vy;
+                particles[i].size -= 0.15;
+                if (particles[i].size <= 0) particles.splice(i, 1);
+            }
+
+            // 5. COLLISIONS
+            let playerHitbox = { x: player_x, y: player_y, w: player_size, h: player_size };
+
+            for (let e = enemies.length - 1; e >= 0; e--) {
+                let enemyHitbox = { x: enemies[e].x, y: enemies[e].y, w: enemy_size, h: enemy_size };
+
+                // Rock hits ship
+                if (isColliding(playerHitbox, enemyHitbox)) {
+                    player_hp--;
+                    createExplosion(enemies[e].x + enemy_size/2, enemies[e].y + enemy_size/2, true);
+                    enemies[e].y = -50; // Reset rock
+                    updateShooterHUD();
+                    continue;
+                }
+
+                // Bullet hits rock
+                for (let b = bullets.length - 1; b >= 0; b--) {
+                    let bulletHitbox = { x: bullets[b].x, y: bullets[b].y, w: 5, h: 15 };
+                    if (isColliding(bulletHitbox, enemyHitbox)) {
+                        createExplosion(enemies[e].x + enemy_size/2, enemies[e].y + enemy_size/2, false);
+                        enemies[e].y = -50;
+                        bullets.splice(b, 1);
+                        shooterScore++;
+                        updateShooterHUD();
+                        break;
+                    }
+                }
+            }
+
+            // 6. DRAW EVERYTHING
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let isCrimson = document.body.classList.contains('crimson-theme');
+
+            // Draw Player Vector Triangle
+            ctx.fillStyle = isCrimson ? "#ff4444" : "#ffffff";
+            ctx.beginPath();
+            ctx.moveTo(player_x + player_size / 2, player_y);
+            ctx.lineTo(player_x, player_y + player_size);
+            ctx.lineTo(player_x + player_size, player_y + player_size);
+            ctx.fill();
+
+            // Draw Bullets
+            ctx.fillStyle = isCrimson ? "#ffaa00" : "#ffff00";
+            for (let b of bullets) {
+                ctx.fillRect(b.x, b.y, 5, 15);
+            }
+
+            // Draw Enemies (Wireframe retro rocks)
+            ctx.strokeStyle = isCrimson ? "#880000" : "#00ffff";
+            ctx.lineWidth = 2;
+            for (let e of enemies) {
+                ctx.beginPath();
+                ctx.arc(e.x + enemy_size/2, e.y + enemy_size/2, enemy_size/2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+
+            // Draw Particles
+            for (let p of particles) {
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
     </script>
 </body>
 </html>
