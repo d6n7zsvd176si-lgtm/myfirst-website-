@@ -269,6 +269,8 @@
     <audio id="hoverSound" src="hoverSound.mp3"></audio>
     <audio id="clickSound" src="clickSound.mp3"></audio>
     <audio id="themeSound" src="themeSound.mp3"></audio>
+    <audio id="shootSound" src="shootSound.mp3"></audio>
+    <audio id="deathSound" src="deathSound.mp3"></audio>
 
     <div class="top-eyes-container">
         <div class="eye"><div class="pupil"></div></div>
@@ -359,10 +361,15 @@
 
     <script>
         // AUDIO & UI SETUP
+        let snakeHighScore = localStorage.getItem('snakeHighScore') || 0;
+        let shooterHighScore = localStorage.getItem('shooterHighScore') || 0;
+
         const hoverSound = document.getElementById('hoverSound');
         const clickSound = document.getElementById('clickSound');
         const themeSound = document.getElementById('themeSound');
-        hoverSound.volume = 0.2; clickSound.volume = 0.3; themeSound.volume = 0.4;
+        const shootSound = document.getElementById('shootSound');
+        const deathSound = document.getElementById('deathSound');
+        hoverSound.volume = 0.2; clickSound.volume = 0.3; themeSound.volume = 0.4; shootSound.volume = 0.1; deathSound.volume = 0.3;
 
         document.querySelectorAll('button, .project-card.playable').forEach(element => {
             element.addEventListener('mouseenter', () => { hoverSound.currentTime = 0; hoverSound.play().catch(e => {}); });
@@ -463,7 +470,7 @@
             clearInterval(gameLoop);
             snake = [{x: 200, y: 200}, {x: 180, y: 200}, {x: 160, y: 200}];
             dx = gridSize; dy = 0; snakeScore = 0;
-            document.getElementById('scoreBoard').innerText = "SCORE: " + snakeScore;
+            document.getElementById('scoreBoard').innerText = `SCORE: ${snakeScore} | HIGH: ${snakeHighScore}`;
             spawnFood();
             document.addEventListener('keydown', changeSnakeDirection);
             gameLoop = setInterval(updateSnake, 100);
@@ -477,22 +484,30 @@
         }
 
         function changeSnakeDirection(event) {
-            if (currentGame !== 'snake') return;
-            const LEFT_KEY = 37, RIGHT_KEY = 39, UP_KEY = 38, DOWN_KEY = 40;
-            const keyPressed = event.keyCode;
-            const goingUp = dy === -gridSize, goingDown = dy === gridSize;
-            const goingRight = dx === gridSize, goingLeft = dx === -gridSize;
+    if (currentGame !== 'snake') return;
 
-            if (keyPressed === LEFT_KEY && !goingRight) { dx = -gridSize; dy = 0; }
-            if (keyPressed === UP_KEY && !goingDown) { dx = 0; dy = -gridSize; }
-            if (keyPressed === RIGHT_KEY && !goingLeft) { dx = gridSize; dy = 0; }
-            if (keyPressed === DOWN_KEY && !goingUp) { dx = 0; dy = gridSize; }
+        const goingUp = dy === -gridSize, goingDown = dy === gridSize;
+        const goingRight = dx === gridSize, goingLeft = dx === -gridSize;
+
+        // Supports both Arrow Keys and WASD
+          if ((event.code === 'ArrowLeft' || event.code === 'KeyA') && !goingRight) { dx = -gridSize; dy = 0; }
+         if ((event.code === 'ArrowUp' || event.code === 'KeyW') && !goingDown) { dx = 0; dy = -gridSize; }
+         if ((event.code === 'ArrowRight' || event.code === 'KeyD') && !goingLeft) { dx = gridSize; dy = 0; }
+         if ((event.code === 'ArrowDown' || event.code === 'KeyS') && !goingUp) { dx = 0; dy = gridSize; }
+
         }
 
         function updateSnake() {
             const head = {x: snake[0].x + dx, y: snake[0].y + dy};
 
             if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || checkSnakeCollision(head)) {
+
+                // --- NEW: Save Snake High Score ---
+                if (snakeScore > snakeHighScore) {
+                    snakeHighScore = snakeScore;
+                    localStorage.setItem('snakeHighScore', snakeHighScore);
+                }
+
                 clearInterval(gameLoop);
                 ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
                 ctx.font = "20px 'Press Start 2P'";
@@ -506,7 +521,7 @@
             snake.unshift(head);
             if (head.x === food.x && head.y === food.y) {
                 snakeScore += 10;
-                document.getElementById('scoreBoard').innerText = "SCORE: " + snakeScore;
+                document.getElementById('scoreBoard').innerText = `SCORE: ${snakeScore} | HIGH: ${snakeHighScore}`;
                 spawnFood();
             } else {
                 snake.pop();
@@ -568,7 +583,7 @@
         }
 
         function updateShooterHUD() {
-            document.getElementById('scoreBoard').innerText = `SCORE: ${shooterScore} | HP: ${player_hp}`;
+            document.getElementById('scoreBoard').innerText = `SCORE: ${shooterScore} | HP: ${player_hp} | HIGH: ${shooterHighScore}`;
         }
 
         // AABB Collision Helper
@@ -603,6 +618,14 @@
 
         function updateShooter() {
             if (player_hp <= 0) {
+
+                // --- NEW: Save Shooter High Score ---
+                if (shooterScore > shooterHighScore) {
+                    shooterHighScore = shooterScore;
+                    localStorage.setItem('shooterHighScore', shooterHighScore);
+                }
+
+                deathSound.play().catch(e => {});
                 clearInterval(gameLoop);
                 ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
                 ctx.font = "20px 'Press Start 2P'";
@@ -622,6 +645,8 @@
             if (keysState['Space'] && shoot_cooldown === 0) {
                 bullets.push({ x: player_x + (player_size / 2) - 2.5, y: player_y });
                 shoot_cooldown = 15; // Python cooldown logic
+                shootSound.currentTime = 0; // Resets the sound so you can rapid-fire
+                shootSound.play().catch(e => {});
             }
 
             // 2. MOVE BULLETS
