@@ -271,6 +271,8 @@
     <audio id="themeSound" src="themeSound.mp3"></audio>
     <audio id="shootSound" src="shootSound.mp3"></audio>
     <audio id="deathSound" src="deathSound.mp3"></audio>
+    <audio id="eatSound" src="eatSound.mp3"></audio>
+    <audio id="snakeDeathSound" src="snakeDeathSound.mp3"></audio>
 
     <div class="top-eyes-container">
         <div class="eye"><div class="pupil"></div></div>
@@ -369,7 +371,9 @@
         const themeSound = document.getElementById('themeSound');
         const shootSound = document.getElementById('shootSound');
         const deathSound = document.getElementById('deathSound');
-        hoverSound.volume = 0.2; clickSound.volume = 0.3; themeSound.volume = 0.4; shootSound.volume = 0.1; deathSound.volume = 0.3;
+        const eatSound = document.getElementById('eatSound');
+        const snakeDeathSound = document.getElementById('snakeDeathSound');
+        hoverSound.volume = 0.2; clickSound.volume = 0.3; themeSound.volume = 0.4; shootSound.volume = 0.1; deathSound.volume = 0.3; eatSound.volume = 0.4; snakeDeathSound.volume = 0.2;
 
         document.querySelectorAll('button, .project-card.playable').forEach(element => {
             element.addEventListener('mouseenter', () => { hoverSound.currentTime = 0; hoverSound.play().catch(e => {}); });
@@ -507,6 +511,8 @@
                     snakeHighScore = snakeScore;
                     localStorage.setItem('snakeHighScore', snakeHighScore);
                 }
+                snakeDeathSound.currentTime = 0;
+                snakeDeathSound.play().catch(e => {});
 
                 clearInterval(gameLoop);
                 ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
@@ -520,6 +526,8 @@
 
             snake.unshift(head);
             if (head.x === food.x && head.y === food.y) {
+            eatSound.currentTime = 0; // Resets sound so it can play rapidly
+            eatSound.play().catch(e => {});
                 snakeScore += 10;
                 document.getElementById('scoreBoard').innerText = `SCORE: ${snakeScore} | HIGH: ${snakeHighScore}`;
                 spawnFood();
