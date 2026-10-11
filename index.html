@@ -322,6 +322,12 @@
                         <span class="tag">PYTHON</span><span class="tag play-tag">> PLAY NOW</span>
                     </div>
 
+                    <div class="project-card playable" onclick="launchGame('aim')">
+                        <h3 style="margin: 0; color: #fff;">Retro Aim Trainer</h3>
+                        <p style="font-size: 18px; margin: 8px 0;">Precision reflex trainer built to test target acquisition speed and accuracy under a 30-second time limit.</p>
+                        <span class="tag">REFLEX</span><span class="tag play-tag">> PLAY NOW</span>
+                    </div>
+
                     <div class="project-card">
                         <h3 style="margin: 0; color: #fff;">Automation Tools</h3>
                         <p style="font-size: 18px; margin: 8px 0;">Custom keyboard & macro automation scripts for gameplay assistance.</p>
@@ -362,9 +368,10 @@
     </div>
 
     <script>
-        // AUDIO & UI SETUP
+        // AUDIO & HIGH SCORES SETUP
         let snakeHighScore = localStorage.getItem('snakeHighScore') || 0;
         let shooterHighScore = localStorage.getItem('shooterHighScore') || 0;
+        let aimHighScore = localStorage.getItem('aimHighScore') || 0;
 
         const hoverSound = document.getElementById('hoverSound');
         const clickSound = document.getElementById('clickSound');
@@ -373,7 +380,9 @@
         const deathSound = document.getElementById('deathSound');
         const eatSound = document.getElementById('eatSound');
         const snakeDeathSound = document.getElementById('snakeDeathSound');
-        hoverSound.volume = 0.2; clickSound.volume = 0.3; themeSound.volume = 0.4; shootSound.volume = 0.1; deathSound.volume = 0.3; eatSound.volume = 0.4; snakeDeathSound.volume = 0.2;
+
+        hoverSound.volume = 0.2; clickSound.volume = 0.3; themeSound.volume = 0.4;
+        shootSound.volume = 0.1; deathSound.volume = 0.3; eatSound.volume = 0.4; snakeDeathSound.volume = 0.2;
 
         document.querySelectorAll('button, .project-card.playable').forEach(element => {
             element.addEventListener('mouseenter', () => { hoverSound.currentTime = 0; hoverSound.play().catch(e => {}); });
@@ -386,14 +395,30 @@
                 const eye = pupil.parentElement;
                 const rect = eye.getBoundingClientRect();
                 const angle = Math.atan2(e.clientY - (rect.top + rect.height/2), e.clientX - (rect.left + rect.width/2));
-                const distance = Math.min(7, Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.height/2)) / 12);
+                const distance = Math.min(7, Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.width/2)) / 12);
                 pupil.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
             });
         });
 
+        // CANVAS MOUSE TRACKING FOR CROSSHAIR
+        let mouseX = 0, mouseY = 0;
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.addEventListener('mousemove', (e) => {
+            const rect = canvas.getBoundingClientRect();
+            mouseX = e.clientX - rect.left;
+            mouseY = e.clientY - rect.top;
+        });
+
         // TERMINAL LOGIC
+        let aimTimer;
+
         function switchScreen(screenId) {
             clearInterval(gameLoop);
+            clearInterval(aimTimer);
+            canvas.onclick = null;
+            canvas.style.cursor = "url('https://cur.cursors-4u.net/games/gam-4/gam372.cur'), auto";
             currentGame = null;
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
@@ -405,7 +430,6 @@
             const btn = document.querySelector('.theme-btn');
             btn.innerText = document.body.classList.contains('crimson-theme') ? "NORMAL ZONE" : "RED ZONE";
 
-            // Update scoreboard color dynamically
             document.getElementById('scoreBoard').style.color = document.body.classList.contains('crimson-theme') ? "#ff0000" : "#00ff00";
         }
 
@@ -434,14 +458,11 @@
         });
 
         // ---------------------------------------------------
-        // ARCADE ENGINE (SNAKE & SPACE SHOOTER)
+        // ARCADE ENGINE (SNAKE, SPACE SHOOTER & AIM TRAINER)
         // ---------------------------------------------------
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
         let gameLoop;
         let currentGame = null;
 
-        // Global Key State for continuous movement
         const keysState = {};
         window.addEventListener("keydown", function(e) {
             keysState[e.code] = true;
@@ -449,9 +470,13 @@
                 e.preventDefault();
             }
         }, false);
+
         window.addEventListener("keyup", function(e) {
             keysState[e.code] = false;
         }, false);
+
+        // Global key listener registered ONCE safely
+        document.addEventListener('keydown', changeSnakeDirection);
 
         function launchGame(gameName) {
             switchScreen('game-screen');
@@ -463,6 +488,9 @@
             } else if (gameName === 'shooter') {
                 document.getElementById('game-title').innerText = "SPACE SHOOTER";
                 initShooter();
+            } else if (gameName === 'aim') {
+                document.getElementById('game-title').innerText = "AIM TRAINER";
+                initAimTrainer();
             }
         }
 
@@ -476,7 +504,6 @@
             dx = gridSize; dy = 0; snakeScore = 0;
             document.getElementById('scoreBoard').innerText = `SCORE: ${snakeScore} | HIGH: ${snakeHighScore}`;
             spawnFood();
-            document.addEventListener('keydown', changeSnakeDirection);
             gameLoop = setInterval(updateSnake, 100);
         }
 
@@ -488,25 +515,21 @@
         }
 
         function changeSnakeDirection(event) {
-    if (currentGame !== 'snake') return;
+            if (currentGame !== 'snake') return;
 
-        const goingUp = dy === -gridSize, goingDown = dy === gridSize;
-        const goingRight = dx === gridSize, goingLeft = dx === -gridSize;
+            const goingUp = dy === -gridSize, goingDown = dy === gridSize;
+            const goingRight = dx === gridSize, goingLeft = dx === -gridSize;
 
-        // Supports both Arrow Keys and WASD
-          if ((event.code === 'ArrowLeft' || event.code === 'KeyA') && !goingRight) { dx = -gridSize; dy = 0; }
-         if ((event.code === 'ArrowUp' || event.code === 'KeyW') && !goingDown) { dx = 0; dy = -gridSize; }
-         if ((event.code === 'ArrowRight' || event.code === 'KeyD') && !goingLeft) { dx = gridSize; dy = 0; }
-         if ((event.code === 'ArrowDown' || event.code === 'KeyS') && !goingUp) { dx = 0; dy = gridSize; }
-
+            if ((event.code === 'ArrowLeft' || event.code === 'KeyA') && !goingRight) { dx = -gridSize; dy = 0; }
+            if ((event.code === 'ArrowUp' || event.code === 'KeyW') && !goingDown) { dx = 0; dy = -gridSize; }
+            if ((event.code === 'ArrowRight' || event.code === 'KeyD') && !goingLeft) { dx = gridSize; dy = 0; }
+            if ((event.code === 'ArrowDown' || event.code === 'KeyS') && !goingUp) { dx = 0; dy = gridSize; }
         }
 
         function updateSnake() {
             const head = {x: snake[0].x + dx, y: snake[0].y + dy};
 
             if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || checkSnakeCollision(head)) {
-
-                // --- NEW: Save Snake High Score ---
                 if (snakeScore > snakeHighScore) {
                     snakeHighScore = snakeScore;
                     localStorage.setItem('snakeHighScore', snakeHighScore);
@@ -526,8 +549,8 @@
 
             snake.unshift(head);
             if (head.x === food.x && head.y === food.y) {
-            eatSound.currentTime = 0; // Resets sound so it can play rapidly
-            eatSound.play().catch(e => {});
+                eatSound.currentTime = 0;
+                eatSound.play().catch(e => {});
                 snakeScore += 10;
                 document.getElementById('scoreBoard').innerText = `SCORE: ${snakeScore} | HIGH: ${snakeHighScore}`;
                 spawnFood();
@@ -556,7 +579,7 @@
             });
         }
 
-        // --- NEW: SPACE SHOOTER (PORTED FROM test graond.py) ---
+        // --- SPACE SHOOTER LOGIC ---
         let player_x, player_y, player_size, player_speed, player_hp;
         let bullets, shoot_cooldown;
         let enemies, base_enemy_speed, enemy_size;
@@ -564,7 +587,7 @@
 
         function initShooter() {
             clearInterval(gameLoop);
-            canvas.onclick = null; // Clear restart clicks
+            canvas.onclick = null;
 
             player_size = 25;
             player_x = (canvas.width / 2) - (player_size / 2);
@@ -579,7 +602,6 @@
             base_enemy_speed = 2;
             enemies = [];
             for (let i = 0; i < 6; i++) {
-                // Space them out exactly like the python code
                 enemies.push({ x: i * 60 + 25, y: -Math.random() * 200 });
             }
 
@@ -587,14 +609,13 @@
             shooterScore = 0;
 
             updateShooterHUD();
-            gameLoop = setInterval(updateShooter, 1000/60); // Run at 60 FPS
+            gameLoop = setInterval(updateShooter, 1000/60);
         }
 
         function updateShooterHUD() {
             document.getElementById('scoreBoard').innerText = `SCORE: ${shooterScore} | HP: ${player_hp} | HIGH: ${shooterHighScore}`;
         }
 
-        // AABB Collision Helper
         function isColliding(r1, r2) {
             return r1.x < r2.x + r2.w && r1.x + r1.w > r2.x &&
                    r1.y < r2.y + r2.h && r1.y + r1.h > r2.y;
@@ -604,16 +625,13 @@
             let count = isPlayerHit ? 25 : 15;
             for (let i = 0; i < count; i++) {
                 let isCrimson = document.body.classList.contains('crimson-theme');
-
-                // Set colors based on python code and theme
                 let color;
                 if (isPlayerHit) {
-                    color = "#ff0000"; // Red for player hit
+                    color = "#ff0000";
                 } else {
                     color = isCrimson ? (Math.random() > 0.5 ? "#ff4444" : "#ffaa00")
-                                      : (Math.random() > 0.5 ? "#00ffff" : "#ff00ff"); // Cyan/Pink or Red/Orange
+                                      : (Math.random() > 0.5 ? "#00ffff" : "#ff00ff");
                 }
-
                 particles.push({
                     x: x, y: y,
                     vx: (Math.random() - 0.5) * 6,
@@ -626,8 +644,6 @@
 
         function updateShooter() {
             if (player_hp <= 0) {
-
-                // --- NEW: Save Shooter High Score ---
                 if (shooterScore > shooterHighScore) {
                     shooterHighScore = shooterScore;
                     localStorage.setItem('shooterHighScore', shooterHighScore);
@@ -644,7 +660,6 @@
                 return;
             }
 
-            // 1. INPUTS
             if ((keysState['ArrowLeft'] || keysState['KeyA']) && player_x > 0) player_x -= player_speed;
             if ((keysState['ArrowRight'] || keysState['KeyD']) && player_x < canvas.width - player_size) player_x += player_speed;
 
@@ -652,20 +667,17 @@
 
             if (keysState['Space'] && shoot_cooldown === 0) {
                 bullets.push({ x: player_x + (player_size / 2) - 2.5, y: player_y });
-                shoot_cooldown = 15; // Python cooldown logic
-                shootSound.currentTime = 0; // Resets the sound so you can rapid-fire
+                shoot_cooldown = 15;
+                shootSound.currentTime = 0;
                 shootSound.play().catch(e => {});
             }
 
-            // 2. MOVE BULLETS
             for (let i = bullets.length - 1; i >= 0; i--) {
                 bullets[i].y -= 7;
                 if (bullets[i].y < 0) bullets.splice(i, 1);
             }
 
-            // 3. MOVE ENEMIES (Progressive Difficulty Curve!)
             let current_enemy_speed = base_enemy_speed + Math.floor(shooterScore / 10);
-
             for (let i = 0; i < enemies.length; i++) {
                 enemies[i].y += current_enemy_speed;
                 if (enemies[i].y > canvas.height) {
@@ -673,7 +685,6 @@
                 }
             }
 
-            // 4. UPDATE PARTICLES
             for (let i = particles.length - 1; i >= 0; i--) {
                 particles[i].x += particles[i].vx;
                 particles[i].y += particles[i].vy;
@@ -681,22 +692,19 @@
                 if (particles[i].size <= 0) particles.splice(i, 1);
             }
 
-            // 5. COLLISIONS
             let playerHitbox = { x: player_x, y: player_y, w: player_size, h: player_size };
 
             for (let e = enemies.length - 1; e >= 0; e--) {
                 let enemyHitbox = { x: enemies[e].x, y: enemies[e].y, w: enemy_size, h: enemy_size };
 
-                // Rock hits ship
                 if (isColliding(playerHitbox, enemyHitbox)) {
                     player_hp--;
                     createExplosion(enemies[e].x + enemy_size/2, enemies[e].y + enemy_size/2, true);
-                    enemies[e].y = -50; // Reset rock
+                    enemies[e].y = -50;
                     updateShooterHUD();
                     continue;
                 }
 
-                // Bullet hits rock
                 for (let b = bullets.length - 1; b >= 0; b--) {
                     let bulletHitbox = { x: bullets[b].x, y: bullets[b].y, w: 5, h: 15 };
                     if (isColliding(bulletHitbox, enemyHitbox)) {
@@ -710,13 +718,11 @@
                 }
             }
 
-            // 6. DRAW EVERYTHING
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
             let isCrimson = document.body.classList.contains('crimson-theme');
 
-            // Draw Player Vector Triangle
             ctx.fillStyle = isCrimson ? "#ff4444" : "#ffffff";
             ctx.beginPath();
             ctx.moveTo(player_x + player_size / 2, player_y);
@@ -724,13 +730,11 @@
             ctx.lineTo(player_x + player_size, player_y + player_size);
             ctx.fill();
 
-            // Draw Bullets
             ctx.fillStyle = isCrimson ? "#ffaa00" : "#ffff00";
             for (let b of bullets) {
                 ctx.fillRect(b.x, b.y, 5, 15);
             }
 
-            // Draw Enemies (Wireframe retro rocks)
             ctx.strokeStyle = isCrimson ? "#880000" : "#00ffff";
             ctx.lineWidth = 2;
             for (let e of enemies) {
@@ -739,11 +743,125 @@
                 ctx.stroke();
             }
 
-            // Draw Particles
             for (let p of particles) {
                 ctx.fillStyle = p.color;
                 ctx.beginPath();
                 ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        // --- AIM TRAINER ENGINE ---
+        let aimScore, aimTimeLeft, target;
+
+        function initAimTrainer() {
+            clearInterval(gameLoop);
+            clearInterval(aimTimer);
+            canvas.onclick = handleAimClick;
+            canvas.style.cursor = 'none';
+
+            aimScore = 0;
+            aimTimeLeft = 30;
+            spawnAimTarget();
+            updateAimHUD();
+
+            gameLoop = setInterval(updateAimTrainer, 1000/60);
+            aimTimer = setInterval(() => {
+                aimTimeLeft--;
+                updateAimHUD();
+                if (aimTimeLeft <= 0) {
+                    endAimTrainer();
+                }
+            }, 1000);
+        }
+
+        function spawnAimTarget() {
+            const radius = 22;
+            target = {
+                x: Math.random() * (canvas.width - (radius * 2 + 20)) + (radius + 10),
+                y: Math.random() * (canvas.height - (radius * 2 + 20)) + (radius + 10),
+                radius: radius
+            };
+        }
+
+        function updateAimHUD() {
+            if (currentGame === 'aim') {
+                document.getElementById('scoreBoard').innerText = `HITS: ${aimScore} | TIME: ${aimTimeLeft}s | HIGH: ${aimHighScore}`;
+            }
+        }
+
+        function handleAimClick(e) {
+            if (currentGame !== 'aim' || aimTimeLeft <= 0) return;
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const distance = Math.hypot(clickX - target.x, clickY - target.y);
+            if (distance <= target.radius) {
+                aimScore++;
+                clickSound.currentTime = 0;
+                clickSound.play().catch(e => {});
+                spawnAimTarget();
+                updateAimHUD();
+            }
+        }
+
+        function endAimTrainer() {
+            clearInterval(gameLoop);
+            clearInterval(aimTimer);
+            canvas.style.cursor = "url('https://cur.cursors-4u.net/games/gam-4/gam372.cur'), auto";
+            canvas.onclick = (e) => { if(currentGame === 'aim') initAimTrainer(); };
+
+            if (aimScore > aimHighScore) {
+                aimHighScore = aimScore;
+                localStorage.setItem('aimHighScore', aimHighScore);
+            }
+
+            deathSound.currentTime = 0;
+            deathSound.play().catch(e => {});
+
+            ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
+            ctx.font = "18px 'Press Start 2P'";
+            ctx.textAlign = "center";
+            ctx.fillText("TIME'S UP!", canvas.width/2, canvas.height/2 - 20);
+            ctx.fillText(`TOTAL HITS: ${aimScore}`, canvas.width/2, canvas.height/2 + 10);
+            ctx.fillText("CLICK TO RETRY", canvas.width/2, canvas.height/2 + 40);
+        }
+
+        function updateAimTrainer() {
+            ctx.fillStyle = "black";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            let isCrimson = document.body.classList.contains('crimson-theme');
+
+            ctx.strokeStyle = isCrimson ? "#ff0000" : "#00ffff";
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, target.radius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            ctx.fillStyle = isCrimson ? "#ff4444" : "#ff00ff";
+            ctx.beginPath();
+            ctx.arc(target.x, target.y, 6, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (currentGame === 'aim') {
+                const crossColor = isCrimson ? "#ff0000" : "#00ffff";
+                const dotColor = isCrimson ? "#ff4444" : "#ff00ff";
+
+                ctx.strokeStyle = crossColor;
+                ctx.lineWidth = 2;
+
+                ctx.beginPath();
+                ctx.moveTo(mouseX - 10, mouseY); ctx.lineTo(mouseX - 3, mouseY);
+                ctx.moveTo(mouseX + 3, mouseY); ctx.lineTo(mouseX + 10, mouseY);
+                ctx.moveTo(mouseX, mouseY - 10); ctx.lineTo(mouseX, mouseY - 3);
+                ctx.moveTo(mouseX, mouseY + 3); ctx.lineTo(mouseX, mouseY + 10);
+                ctx.stroke();
+
+                ctx.fillStyle = dotColor;
+                ctx.beginPath();
+                ctx.arc(mouseX, mouseY, 2, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
