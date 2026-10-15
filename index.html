@@ -395,7 +395,7 @@
                 const eye = pupil.parentElement;
                 const rect = eye.getBoundingClientRect();
                 const angle = Math.atan2(e.clientY - (rect.top + rect.height/2), e.clientX - (rect.left + rect.width/2));
-                const distance = Math.min(7, Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.width/2)) / 12);
+                const distance = Math.min(7, Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.height/2)) / 12);
                 pupil.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
             });
         });
@@ -411,7 +411,7 @@
             mouseY = e.clientY - rect.top;
         });
 
-        // TERMINAL LOGIC
+        // TERMINAL LOGIC & SCREENS
         let aimTimer;
 
         function switchScreen(screenId) {
@@ -475,7 +475,6 @@
             keysState[e.code] = false;
         }, false);
 
-        // Global key listener registered ONCE safely
         document.addEventListener('keydown', changeSnakeDirection);
 
         function launchGame(gameName) {
@@ -494,24 +493,70 @@
             }
         }
 
-        // --- SNAKE GAME LOGIC ---
-        let snake, food, dx, dy, snakeScore;
+        // --- SNAKE GAME LOGIC (Scaling Landmines & Red Dot Visual) ---
+        let snake, food, landmines, dx, dy, snakeScore, snakeSpeed, lastMineScore;
         const gridSize = 20;
 
         function initSnake() {
             clearInterval(gameLoop);
             snake = [{x: 200, y: 200}, {x: 180, y: 200}, {x: 160, y: 200}];
-            dx = gridSize; dy = 0; snakeScore = 0;
+            dx = gridSize; dy = 0; snakeScore = 0; snakeSpeed = 100;
+            lastMineScore = 0;
+            landmines = [];
             document.getElementById('scoreBoard').innerText = `SCORE: ${snakeScore} | HIGH: ${snakeHighScore}`;
             spawnFood();
-            gameLoop = setInterval(updateSnake, 100);
+            updateLandminesCluster();
+            startSnakeLoop();
+        }
+
+        function startSnakeLoop() {
+            clearInterval(gameLoop);
+            gameLoop = setInterval(updateSnake, snakeSpeed);
         }
 
         function spawnFood() {
+            const isGold = Math.random() < 0.2;
             food = {
                 x: Math.floor(Math.random() * (canvas.width / gridSize)) * gridSize,
-                y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize
+                y: Math.floor(Math.random() * (canvas.height / gridSize)) * gridSize,
+                type: isGold ? 'gold' : 'normal'
             };
+        }
+
+        function updateLandminesCluster() {
+            let targetCount = 1 + Math.floor(snakeScore / 100);
+            landmines = [];
+
+            for (let i = 0; i < targetCount; i++) {
+                let options = [];
+                for (let x = 0; x < canvas.width; x += gridSize) {
+                    for (let y = 0; y < canvas.height; y += gridSize) {
+                        let onSnake = snake.some(part => part.x === x && part.y === y);
+                        let onFood = (food && food.x === x && food.y === y);
+                        let alreadyMine = landmines.some(m => m.x === x && m.y === y);
+                        let headDist = Math.hypot(x - snake[0].x, y - snake[0].y);
+                        if (!onSnake && !onFood && !alreadyMine && headDist > 60) {
+                            options.push({x, y});
+                        }
+                    }
+                }
+                if (options.length === 0) {
+                    for (let x = 0; x < canvas.width; x += gridSize) {
+                        for (let y = 0; y < canvas.height; y += gridSize) {
+                            let onSnake = snake.some(part => part.x === x && part.y === y);
+                            let onFood = (food && food.x === x && food.y === y);
+                            let alreadyMine = landmines.some(m => m.x === x && m.y === y);
+                            if (!onSnake && !onFood && !alreadyMine && (x !== snake[0].x || y !== snake[0].y)) {
+                                options.push({x, y});
+                            }
+                        }
+                    }
+                }
+                if (options.length > 0) {
+                    let chosen = options[Math.floor(Math.random() * options.length)];
+                    landmines.push({ x: chosen.x, y: chosen.y });
+                }
+            }
         }
 
         function changeSnakeDirection(event) {
@@ -529,7 +574,9 @@
         function updateSnake() {
             const head = {x: snake[0].x + dx, y: snake[0].y + dy};
 
-            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || checkSnakeCollision(head)) {
+            let hitLandmine = landmines.some(m => head.x === m.x && head.y === m.y);
+
+            if (head.x < 0 || head.x >= canvas.width || head.y < 0 || head.y >= canvas.height || checkSnakeCollision(head) || hitLandmine) {
                 if (snakeScore > snakeHighScore) {
                     snakeHighScore = snakeScore;
                     localStorage.setItem('snakeHighScore', snakeHighScore);
@@ -551,12 +598,26 @@
             if (head.x === food.x && head.y === food.y) {
                 eatSound.currentTime = 0;
                 eatSound.play().catch(e => {});
-                snakeScore += 10;
+
+                const points = food.type === 'gold' ? 30 : 10;
+                snakeScore += points;
                 document.getElementById('scoreBoard').innerText = `SCORE: ${snakeScore} | HIGH: ${snakeHighScore}`;
+
+                if (snakeSpeed > 55) {
+                    snakeSpeed = Math.max(55, 100 - Math.floor(snakeScore / 40) * 5);
+                    startSnakeLoop();
+                }
+
                 spawnFood();
             } else {
                 snake.pop();
             }
+
+            if (snakeScore !== lastMineScore && snakeScore % 10 === 0) {
+                updateLandminesCluster();
+                lastMineScore = snakeScore;
+            }
+
             drawSnakeGame();
         }
 
@@ -570,8 +631,22 @@
         function drawSnakeGame() {
             ctx.fillStyle = "black";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-            ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "#ff0000" : "#ff00ff";
+
+            if (food.type === 'gold') {
+                ctx.fillStyle = "#ffd700";
+            } else {
+                ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "#ff0000" : "#ff00ff";
+            }
             ctx.fillRect(food.x, food.y, gridSize - 2, gridSize - 2);
+
+            // Draw Landmines as Red Dots
+            ctx.fillStyle = "#ff0000";
+            landmines.forEach(m => {
+                ctx.beginPath();
+                ctx.arc(m.x + gridSize / 2, m.y + gridSize / 2, gridSize / 3, 0, Math.PI * 2);
+                ctx.fill();
+            });
+
             snake.forEach((part, index) => {
                 if (index === 0) ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "#ff4444" : "#ffffff";
                 else ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "#aa0000" : "#00ffff";
@@ -579,10 +654,11 @@
             });
         }
 
-        // --- SPACE SHOOTER LOGIC ---
+        // --- SPACE SHOOTER LOGIC (Homing starts at score 20) ---
         let player_x, player_y, player_size, player_speed, player_hp;
-        let bullets, shoot_cooldown;
+        let bullets, shoot_cooldown, rapidFireTimer;
         let enemies, base_enemy_speed, enemy_size;
+        let powerups;
         let particles, shooterScore;
 
         function initShooter() {
@@ -594,17 +670,19 @@
             player_y = canvas.height - 40;
             player_speed = 5;
             player_hp = 3;
+            rapidFireTimer = 0;
 
             bullets = [];
             shoot_cooldown = 0;
 
             enemy_size = 25;
-            base_enemy_speed = 2;
+            base_enemy_speed = 2.2;
             enemies = [];
             for (let i = 0; i < 6; i++) {
                 enemies.push({ x: i * 60 + 25, y: -Math.random() * 200 });
             }
 
+            powerups = [];
             particles = [];
             shooterScore = 0;
 
@@ -613,7 +691,9 @@
         }
 
         function updateShooterHUD() {
-            document.getElementById('scoreBoard').innerText = `SCORE: ${shooterScore} | HP: ${player_hp} | HIGH: ${shooterHighScore}`;
+            let statusText = `SCORE: ${shooterScore} | HP: ${player_hp} | HIGH: ${shooterHighScore}`;
+            if (rapidFireTimer > 0) statusText += " [RAPID]";
+            document.getElementById('scoreBoard').innerText = statusText;
         }
 
         function isColliding(r1, r2) {
@@ -664,24 +744,49 @@
             if ((keysState['ArrowRight'] || keysState['KeyD']) && player_x < canvas.width - player_size) player_x += player_speed;
 
             if (shoot_cooldown > 0) shoot_cooldown--;
+            if (rapidFireTimer > 0) rapidFireTimer--;
 
+            const currentCooldownMax = rapidFireTimer > 0 ? 6 : 15;
             if (keysState['Space'] && shoot_cooldown === 0) {
-                bullets.push({ x: player_x + (player_size / 2) - 2.5, y: player_y });
-                shoot_cooldown = 15;
+                if (rapidFireTimer > 0) {
+                    bullets.push({ x: player_x + 3, y: player_y });
+                    bullets.push({ x: player_x + player_size - 8, y: player_y });
+                } else {
+                    bullets.push({ x: player_x + (player_size / 2) - 2.5, y: player_y });
+                }
+                shoot_cooldown = currentCooldownMax;
                 shootSound.currentTime = 0;
                 shootSound.play().catch(e => {});
             }
 
             for (let i = bullets.length - 1; i >= 0; i--) {
-                bullets[i].y -= 7;
+                bullets[i].y -= 8;
                 if (bullets[i].y < 0) bullets.splice(i, 1);
             }
 
-            let current_enemy_speed = base_enemy_speed + Math.floor(shooterScore / 10);
+            for (let i = powerups.length - 1; i >= 0; i--) {
+                powerups[i].y += 2.5;
+                if (powerups[i].y > canvas.height) {
+                    powerups.splice(i, 1);
+                }
+            }
+
+            let current_enemy_speed = base_enemy_speed + Math.floor(shooterScore / 15);
             for (let i = 0; i < enemies.length; i++) {
                 enemies[i].y += current_enemy_speed;
+
+                // Homing behavior once score reaches 20+
+                if (shooterScore >= 20) {
+                    if (enemies[i].x + enemy_size / 2 < player_x + player_size / 2) {
+                        enemies[i].x += 0.6;
+                    } else {
+                        enemies[i].x -= 0.6;
+                    }
+                }
+
                 if (enemies[i].y > canvas.height) {
                     enemies[i].y = -50;
+                    enemies[i].x = Math.random() * (canvas.width - enemy_size);
                 }
             }
 
@@ -694,6 +799,19 @@
 
             let playerHitbox = { x: player_x, y: player_y, w: player_size, h: player_size };
 
+            for (let p = powerups.length - 1; p >= 0; p--) {
+                let pBox = { x: powerups[p].x, y: powerups[p].y, w: 18, h: 18 };
+                if (isColliding(playerHitbox, pBox)) {
+                    if (powerups[p].type === 'heal' && player_hp < 3) {
+                        player_hp++;
+                    } else if (powerups[p].type === 'rapid') {
+                        rapidFireTimer = 300;
+                    }
+                    powerups.splice(p, 1);
+                    updateShooterHUD();
+                }
+            }
+
             for (let e = enemies.length - 1; e >= 0; e--) {
                 let enemyHitbox = { x: enemies[e].x, y: enemies[e].y, w: enemy_size, h: enemy_size };
 
@@ -701,6 +819,7 @@
                     player_hp--;
                     createExplosion(enemies[e].x + enemy_size/2, enemies[e].y + enemy_size/2, true);
                     enemies[e].y = -50;
+                    enemies[e].x = Math.random() * (canvas.width - enemy_size);
                     updateShooterHUD();
                     continue;
                 }
@@ -709,7 +828,14 @@
                     let bulletHitbox = { x: bullets[b].x, y: bullets[b].y, w: 5, h: 15 };
                     if (isColliding(bulletHitbox, enemyHitbox)) {
                         createExplosion(enemies[e].x + enemy_size/2, enemies[e].y + enemy_size/2, false);
+
+                        if (Math.random() < 0.3) {
+                            const pType = Math.random() < 0.5 ? 'heal' : 'rapid';
+                            powerups.push({ x: enemies[e].x, y: enemies[e].y, type: pType });
+                        }
+
                         enemies[e].y = -50;
+                        enemies[e].x = Math.random() * (canvas.width - enemy_size);
                         bullets.splice(b, 1);
                         shooterScore++;
                         updateShooterHUD();
@@ -730,6 +856,14 @@
             ctx.lineTo(player_x + player_size, player_y + player_size);
             ctx.fill();
 
+            for (let p of powerups) {
+                ctx.fillStyle = p.type === 'heal' ? "#00ff00" : "#ffff00";
+                ctx.fillRect(p.x, p.y, 18, 18);
+                ctx.fillStyle = "black";
+                ctx.font = "12px 'Press Start 2P'";
+                ctx.fillText(p.type === 'heal' ? "+" : "F", p.x + 3, p.y + 14);
+            }
+
             ctx.fillStyle = isCrimson ? "#ffaa00" : "#ffff00";
             for (let b of bullets) {
                 ctx.fillRect(b.x, b.y, 5, 15);
@@ -743,10 +877,10 @@
                 ctx.stroke();
             }
 
-            for (let p of particles) {
-                ctx.fillStyle = p.color;
+            for (let pt of particles) {
+                ctx.fillStyle = pt.color;
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.arc(pt.x, pt.y, pt.size, 0, Math.PI * 2);
                 ctx.fill();
             }
         }
