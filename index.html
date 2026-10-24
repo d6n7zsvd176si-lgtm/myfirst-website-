@@ -6,6 +6,10 @@
     <title>My Retro Terminal Portfolio</title>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
 
+    <!-- Firebase SDK for Global Leaderboards -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
     <style>
         body {
             background-color: #2b2b2b;
@@ -229,7 +233,7 @@
         .prompt-symbol { color: #00ff00; font-family: 'Press Start 2P', cursive; font-size: 12px; }
         .cmd-input { background: transparent; border: none; color: #00ff00; font-family: 'VT323', monospace; font-size: 22px; outline: none; width: 100%; }
 
-        .canvas-container { display: flex; justify-content: center; align-items: center; flex-direction: column; }
+        .canvas-container { display: flex; justify-content: center; align-items: center; flex-direction: column; position: relative; }
         canvas {
             background-color: black;
             border: 4px solid #00ffff;
@@ -348,6 +352,28 @@
                 <h1 class="screen-title" id="game-title">Arcade Mode</h1>
                 <div class="canvas-container">
                     <canvas id="gameCanvas" width="400" height="400"></canvas>
+
+                    <!-- GAME OVER & LEADERBOARD MODAL OVERLAY -->
+                    <div id="gameOverModal" style="display:none; position:absolute; top:0; left:0; width:400px; height:400px; background:rgba(0,0,0,0.9); z-index:20; flex-direction:column; justify-content:center; align-items:center; font-family:'Press Start 2P', cursive; color:white; padding:15px; box-sizing:border-box;">
+                        <h2 style="color:#ff0055; margin-bottom:8px; font-size:16px; text-shadow:2px 2px #550000;">GAME OVER</h2>
+                        <p id="goFinalScore" style="font-size:11px; margin-bottom:12px; color:#00ffcc;">SCORE: 0</p>
+
+                        <div id="scoreSubmitSection" style="margin-bottom:12px; text-align:center;">
+                            <p style="font-size:9px; margin-bottom:6px;">ENTER YOUR NAME:</p>
+                            <input type="text" id="playerInitials" maxlength="15" value="Player" style="background:black; border:2px solid #00ffcc; color:#00ffcc; font-family:'VT323', monospace; font-size:20px; width:140px; text-align:center; padding:2px; outline:none;">
+                            <button class="menu-btn" style="padding:6px 10px; font-size:9px; margin-left:8px; margin-top:0;" onclick="submitCurrentScore()">SUBMIT</button>
+                        </div>
+
+                        <div style="width:100%; max-width:320px; background:#111; border:2px solid #444; padding:8px; border-radius:6px; margin-bottom:12px;">
+                            <div style="font-size:9px; color:#ffff00; text-align:center; margin-bottom:6px; border-bottom:1px dashed #444; padding-bottom:3px;">TOP 10 LEADERBOARD</div>
+                            <div id="leaderboardList" style="font-family:'VT323'; font-size:18px; max-height:100px; overflow-y:auto; text-align:left; padding:0 10px;">
+                                <!-- Populated dynamically -->
+                            </div>
+                        </div>
+
+                        <button class="menu-btn" style="padding:8px 16px; font-size:10px; margin:0;" onclick="restartCurrentGame()">PLAY AGAIN</button>
+                    </div>
+
                     <div style="margin-top: 15px; text-align: center; width: 400px; display: flex; justify-content: space-between; align-items: center;">
                         <span id="scoreBoard" style="font-family: 'Press Start 2P', cursive; font-size: 12px; color: #00ff00;">SCORE: 0 | HP: 3</span>
                         <button class="menu-btn" style="padding: 10px; font-size: 10px; margin: 0;" onclick="switchScreen('projects')">EXIT GAME</button>
@@ -368,6 +394,167 @@
     </div>
 
     <script>
+        // --- FIREBASE CONFIGURATION (Replace with your keys when ready) ---
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+
+        let db = null;
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_API_KEY") {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.database();
+            }
+        } catch (e) {
+            console.log("Firebase not configured. Using local fallback.");
+        }
+
+        // --- LEADERBOARD HELPER FUNCTIONS ---
+        let pendingScore = 0;
+        let pendingGame = '';
+
+        function getLeaderboardData(gameName, callback) {
+            if (db) {
+                db.ref('leaderboards/' + gameName).orderByChild('score').limitToLast(10).once('value', (snapshot) => {
+                    let items = [];
+                    snapshot.forEach((childSnapshot) => {
+                        items.push(childSnapshot.val());
+                    });
+                    items.sort((a, b) => b.score - a.score);
+                    callback(items);
+                }).catch(() => {
+                    callback(getLocalLeaderboard(gameName));
+                });
+            } else {
+                callback(getLocalLeaderboard(gameName));
+            }
+        }
+
+        // --- UPDATED SUBMIT SCORE FUNCTION (Best Score Only per Player) ---
+        function submitScoreToLeaderboard(gameName, name, score, callback) {
+            let cleanName = (name || "Player").trim().substring(0, 15);
+
+            if (db) {
+                let ref = db.ref('leaderboards/' + gameName);
+                ref.once('value', (snapshot) => {
+                    let existingKey = null;
+                    let existingScore = -1;
+
+                    snapshot.forEach((childSnapshot) => {
+                        let val = childSnapshot.val();
+                        if (val.name.toLowerCase() === cleanName.toLowerCase()) {
+                            if (val.score > existingScore) {
+                                existingScore = val.score;
+                                existingKey = childSnapshot.key;
+                            }
+                        }
+                    });
+
+                    if (existingKey) {
+                        // If player exists, only update if the new score is higher
+                        if (score > existingScore) {
+                            ref.child(existingKey).update({ score: score, timestamp: Date.now() }, () => {
+                                getLeaderboardData(gameName, callback);
+                            });
+                        } else {
+                            getLeaderboardData(gameName, callback);
+                        }
+                    } else {
+                        // New player, push new entry
+                        ref.push({
+                            name: cleanName,
+                            score: score,
+                            timestamp: Date.now()
+                        }, () => {
+                            getLeaderboardData(gameName, callback);
+                        });
+                    }
+                });
+            } else {
+                // Local Storage Fallback Logic
+                let list = getLocalLeaderboard(gameName);
+                let existingIndex = list.findIndex(item => item.name.toLowerCase() === cleanName.toLowerCase());
+
+                if (existingIndex !== -1) {
+                    if (score > list[existingIndex].score) {
+                        list[existingIndex].score = score;
+                        list[existingIndex].timestamp = Date.now();
+                    }
+                } else {
+                    list.push({ name: cleanName, score: score, timestamp: Date.now() });
+                }
+
+                list.sort((a, b) => b.score - a.score);
+                list = list.slice(0, 10);
+                localStorage.setItem(gameName + '_leaderboard', JSON.stringify(list));
+                callback(list);
+            }
+        }
+
+        function getLocalLeaderboard(gameName) {
+            try {
+                let data = localStorage.getItem(gameName + '_leaderboard');
+                return data ? JSON.parse(data) : [
+                    { name: "Zone", score: 120 },
+                    { name: "Retro", score: 80 },
+                    { name: "Player", score: 40 }
+                ];
+            } catch(e) {
+                return [];
+            }
+        }
+
+        function showGameOverModal(score, gameName) {
+            pendingScore = score;
+            pendingGame = gameName;
+            document.getElementById('goFinalScore').innerText = `FINAL SCORE: ${score}`;
+            document.getElementById('scoreSubmitSection').style.display = 'block';
+            document.getElementById('playerInitials').value = 'Player';
+
+            getLeaderboardData(gameName, (list) => {
+                renderLeaderboardTable(list);
+            });
+
+            document.getElementById('gameOverModal').style.display = 'flex';
+        }
+
+        function submitCurrentScore() {
+            let playerName = document.getElementById('playerInitials').value || 'Player';
+            submitScoreToLeaderboard(pendingGame, playerName, pendingScore, (list) => {
+                renderLeaderboardTable(list);
+                document.getElementById('scoreSubmitSection').style.display = 'none';
+            });
+        }
+
+        function renderLeaderboardTable(list) {
+            let container = document.getElementById('leaderboardList');
+            if (!list || list.length === 0) {
+                container.innerHTML = '<div style="text-align:center; color:#777;">No scores yet!</div>';
+                return;
+            }
+            let html = '';
+            list.forEach((item, idx) => {
+                html += `<div style="display:flex; justify-content:space-between; padding:2px 0; border-bottom:1px dotted #333;">
+                    <span>${idx + 1}. ${item.name}</span>
+                    <span style="color:#00ffcc;">${item.score}</span>
+                </div>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function restartCurrentGame() {
+            document.getElementById('gameOverModal').style.display = 'none';
+            if (pendingGame === 'snake') initSnake();
+            else if (pendingGame === 'shooter') initShooter();
+            else if (pendingGame === 'aim') initAimTrainer();
+        }
+
         // AUDIO & HIGH SCORES SETUP
         let snakeHighScore = localStorage.getItem('snakeHighScore') || 0;
         let shooterHighScore = localStorage.getItem('shooterHighScore') || 0;
@@ -395,7 +582,7 @@
                 const eye = pupil.parentElement;
                 const rect = eye.getBoundingClientRect();
                 const angle = Math.atan2(e.clientY - (rect.top + rect.height/2), e.clientX - (rect.left + rect.width/2));
-                const distance = Math.min(7, Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.height/2)) / 12);
+                const distance = Math.min(7, Math.hypot(e.clientX - (rect.left + rect.width/2), e.clientY - (rect.top + rect.width/2)) / 12);
                 pupil.style.transform = `translate(${Math.cos(angle) * distance}px, ${Math.sin(angle) * distance}px)`;
             });
         });
@@ -417,6 +604,7 @@
         function switchScreen(screenId) {
             clearInterval(gameLoop);
             clearInterval(aimTimer);
+            document.getElementById('gameOverModal').style.display = 'none';
             canvas.onclick = null;
             canvas.style.cursor = "url('https://cur.cursors-4u.net/games/gam-4/gam372.cur'), auto";
             currentGame = null;
@@ -480,6 +668,7 @@
         function launchGame(gameName) {
             switchScreen('game-screen');
             currentGame = gameName;
+            document.getElementById('gameOverModal').style.display = 'none';
 
             if (gameName === 'snake') {
                 document.getElementById('game-title').innerText = "SNAKE ALGORITHM";
@@ -493,12 +682,13 @@
             }
         }
 
-        // --- SNAKE GAME LOGIC (Scaling Landmines & Red Dot Visual) ---
+        // --- SNAKE GAME LOGIC ---
         let snake, food, landmines, dx, dy, snakeScore, snakeSpeed, lastMineScore;
         const gridSize = 20;
 
         function initSnake() {
             clearInterval(gameLoop);
+            document.getElementById('gameOverModal').style.display = 'none';
             snake = [{x: 200, y: 200}, {x: 180, y: 200}, {x: 160, y: 200}];
             dx = gridSize; dy = 0; snakeScore = 0; snakeSpeed = 100;
             lastMineScore = 0;
@@ -585,12 +775,7 @@
                 snakeDeathSound.play().catch(e => {});
 
                 clearInterval(gameLoop);
-                ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
-                ctx.font = "20px 'Press Start 2P'";
-                ctx.textAlign = "center";
-                ctx.fillText("GAME OVER", canvas.width/2, canvas.height/2);
-                ctx.fillText("CLICK TO RESTART", canvas.width/2, canvas.height/2 + 30);
-                canvas.onclick = () => { if(currentGame === 'snake') initSnake(); };
+                showGameOverModal(snakeScore, 'snake');
                 return;
             }
 
@@ -639,7 +824,6 @@
             }
             ctx.fillRect(food.x, food.y, gridSize - 2, gridSize - 2);
 
-            // Draw Landmines as Red Dots
             ctx.fillStyle = "#ff0000";
             landmines.forEach(m => {
                 ctx.beginPath();
@@ -654,7 +838,7 @@
             });
         }
 
-        // --- SPACE SHOOTER LOGIC (Homing starts at score 20) ---
+        // --- SPACE SHOOTER LOGIC ---
         let player_x, player_y, player_size, player_speed, player_hp;
         let bullets, shoot_cooldown, rapidFireTimer;
         let enemies, base_enemy_speed, enemy_size;
@@ -663,6 +847,7 @@
 
         function initShooter() {
             clearInterval(gameLoop);
+            document.getElementById('gameOverModal').style.display = 'none';
             canvas.onclick = null;
 
             player_size = 25;
@@ -731,12 +916,7 @@
 
                 deathSound.play().catch(e => {});
                 clearInterval(gameLoop);
-                ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
-                ctx.font = "20px 'Press Start 2P'";
-                ctx.textAlign = "center";
-                ctx.fillText("SYSTEM FAILURE", canvas.width/2, canvas.height/2);
-                ctx.fillText("CLICK TO REBOOT", canvas.width/2, canvas.height/2 + 30);
-                canvas.onclick = () => { if(currentGame === 'shooter') initShooter(); };
+                showGameOverModal(shooterScore, 'shooter');
                 return;
             }
 
@@ -775,7 +955,6 @@
             for (let i = 0; i < enemies.length; i++) {
                 enemies[i].y += current_enemy_speed;
 
-                // Homing behavior once score reaches 20+
                 if (shooterScore >= 20) {
                     if (enemies[i].x + enemy_size / 2 < player_x + player_size / 2) {
                         enemies[i].x += 0.6;
@@ -890,6 +1069,7 @@
 
         function initAimTrainer() {
             clearInterval(gameLoop);
+            document.getElementById('gameOverModal').style.display = 'none';
             clearInterval(aimTimer);
             canvas.onclick = handleAimClick;
             canvas.style.cursor = 'none';
@@ -944,7 +1124,7 @@
             clearInterval(gameLoop);
             clearInterval(aimTimer);
             canvas.style.cursor = "url('https://cur.cursors-4u.net/games/gam-4/gam372.cur'), auto";
-            canvas.onclick = (e) => { if(currentGame === 'aim') initAimTrainer(); };
+            canvas.onclick = null;
 
             if (aimScore > aimHighScore) {
                 aimHighScore = aimScore;
@@ -954,12 +1134,7 @@
             deathSound.currentTime = 0;
             deathSound.play().catch(e => {});
 
-            ctx.fillStyle = document.body.classList.contains('crimson-theme') ? "red" : "white";
-            ctx.font = "18px 'Press Start 2P'";
-            ctx.textAlign = "center";
-            ctx.fillText("TIME'S UP!", canvas.width/2, canvas.height/2 - 20);
-            ctx.fillText(`TOTAL HITS: ${aimScore}`, canvas.width/2, canvas.height/2 + 10);
-            ctx.fillText("CLICK TO RETRY", canvas.width/2, canvas.height/2 + 40);
+            showGameOverModal(aimScore, 'aim');
         }
 
         function updateAimTrainer() {
