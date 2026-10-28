@@ -227,6 +227,65 @@
         .stat-bar { width: 100%; height: 20px; background-color: #111; border: 3px solid white; border-radius: 5px; overflow: hidden; padding: 2px; }
         .stat-fill { height: 100%; background: linear-gradient(90deg, #00ff00, #00ffff); transition: width 1s ease-in-out; }
 
+        /* LEADERBOARD SCREEN STYLES */
+        .lb-tabs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .lb-tab-btn {
+            background-color: #000;
+            color: #00ffff;
+            border: 2px solid #00ffff;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 10px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+
+        .lb-tab-btn.active-tab, .lb-tab-btn:hover {
+            background-color: #00ffff;
+            color: #000;
+            box-shadow: 0 0 10px #00ffff;
+        }
+
+        .lb-table-container {
+            background: rgba(0, 0, 0, 0.85);
+            border: 3px solid #00ff00;
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        .lb-header-row {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 11px;
+            color: #ffff00;
+            border-bottom: 2px dashed #ffff00;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+        }
+
+        .lb-row {
+            display: flex;
+            justify-content: space-between;
+            font-family: 'VT323', monospace;
+            font-size: 22px;
+            padding: 4px 0;
+            border-bottom: 1px dotted #333;
+        }
+
+        .lb-row:nth-child(1) .lb-rank { color: #ffd700; font-weight: bold; }
+        .lb-row:nth-child(2) .lb-rank { color: #c0c0c0; }
+        .lb-row:nth-child(3) .lb-rank { color: #cd7f32; }
+
         .terminal-box { margin-top: 20px; border-top: 2px solid #444; padding-top: 15px; z-index: 3; font-family: 'VT323', monospace; }
         .terminal-logs { max-height: 80px; overflow-y: auto; margin-bottom: 8px; color: #aaa; font-size: 18px; }
         .terminal-input-line { display: flex; align-items: center; gap: 8px; }
@@ -259,6 +318,9 @@
         body.crimson-theme .project-card.playable { border-color: #ff4444; }
         body.crimson-theme .prompt-symbol, body.crimson-theme .cmd-input { color: #ff0000; }
         body.crimson-theme canvas { border-color: #ff0000; box-shadow: 0 0 15px rgba(255, 0, 0, 0.4); }
+        body.crimson-theme .lb-table-container { border-color: #ff0000; box-shadow: 0 0 15px rgba(255, 0, 0, 0.3); }
+        body.crimson-theme .lb-tab-btn { border-color: #ff0000; color: #ff0000; }
+        body.crimson-theme .lb-tab-btn.active-tab, body.crimson-theme .lb-tab-btn:hover { background-color: #ff0000; color: #000; box-shadow: 0 0 10px #ff0000; }
 
         @media (max-width: 768px) {
             body { flex-direction: column; padding-top: 100px; }
@@ -292,6 +354,7 @@
         <h2 class="nav-header">Navigation</h2>
         <button class="menu-btn" onclick="switchScreen('about')">About Me</button>
         <button class="menu-btn" onclick="switchScreen('projects')">My Projects</button>
+        <button class="menu-btn" onclick="switchScreen('leaderboard-screen')">Leaderboard</button>
         <button class="menu-btn" onclick="switchScreen('skills')">Skills / Stats</button>
     </div>
 
@@ -340,6 +403,25 @@
                 </div>
             </div>
 
+            <!-- DEDICATED LEADERBOARD SCREEN -->
+            <div id="leaderboard-screen" class="content-section">
+                <h1 class="screen-title">GLOBAL LEADERBOARD</h1>
+                <div class="lb-tabs">
+                    <button class="lb-tab-btn active-tab" onclick="loadTabLeaderboard('snake', this)">SNAKE</button>
+                    <button class="lb-tab-btn" onclick="loadTabLeaderboard('shooter', this)">SHOOTER</button>
+                    <button class="lb-tab-btn" onclick="loadTabLeaderboard('aim', this)">AIM TRAINER</button>
+                </div>
+                <div class="lb-table-container">
+                    <div class="lb-header-row">
+                        <span>RANK & PLAYER</span>
+                        <span>HIGH SCORE</span>
+                    </div>
+                    <div id="globalLeaderboardList">
+                        <!-- Dynamically Populated -->
+                    </div>
+                </div>
+            </div>
+
             <div id="skills" class="content-section">
                 <h1 class="screen-title">Player Attributes</h1>
                 <div class="stat-container"><div class="stat-header"><span>PYTHON DEVELOPMENT</span><span>LVL 40</span></div><div class="stat-bar"><div class="stat-fill" style="width: 40%;"></div></div></div>
@@ -366,7 +448,7 @@
 
                         <div style="width:100%; max-width:320px; background:#111; border:2px solid #444; padding:8px; border-radius:6px; margin-bottom:12px;">
                             <div style="font-size:9px; color:#ffff00; text-align:center; margin-bottom:6px; border-bottom:1px dashed #444; padding-bottom:3px;">TOP 10 LEADERBOARD</div>
-                            <div id="leaderboardList" style="font-family:'VT323'; font-size:18px; max-height:100px; overflow-y:auto; text-align:left; padding:0 10px;">
+                            <div id="modalLeaderboardList" style="font-family:'VT323'; font-size:18px; max-height:100px; overflow-y:auto; text-align:left; padding:0 10px;">
                                 <!-- Populated dynamically -->
                             </div>
                         </div>
@@ -436,7 +518,7 @@
             }
         }
 
-        // --- UPDATED SUBMIT SCORE FUNCTION (Best Score Only per Player) ---
+        // --- SUBMIT SCORE FUNCTION (Best Score Only per Player) ---
         function submitScoreToLeaderboard(gameName, name, score, callback) {
             let cleanName = (name || "Player").trim().substring(0, 15);
 
@@ -457,7 +539,6 @@
                     });
 
                     if (existingKey) {
-                        // If player exists, only update if the new score is higher
                         if (score > existingScore) {
                             ref.child(existingKey).update({ score: score, timestamp: Date.now() }, () => {
                                 getLeaderboardData(gameName, callback);
@@ -466,7 +547,6 @@
                             getLeaderboardData(gameName, callback);
                         }
                     } else {
-                        // New player, push new entry
                         ref.push({
                             name: cleanName,
                             score: score,
@@ -477,7 +557,6 @@
                     }
                 });
             } else {
-                // Local Storage Fallback Logic
                 let list = getLocalLeaderboard(gameName);
                 let existingIndex = list.findIndex(item => item.name.toLowerCase() === cleanName.toLowerCase());
 
@@ -518,7 +597,7 @@
             document.getElementById('playerInitials').value = 'Player';
 
             getLeaderboardData(gameName, (list) => {
-                renderLeaderboardTable(list);
+                renderModalLeaderboard(list);
             });
 
             document.getElementById('gameOverModal').style.display = 'flex';
@@ -527,13 +606,13 @@
         function submitCurrentScore() {
             let playerName = document.getElementById('playerInitials').value || 'Player';
             submitScoreToLeaderboard(pendingGame, playerName, pendingScore, (list) => {
-                renderLeaderboardTable(list);
+                renderModalLeaderboard(list);
                 document.getElementById('scoreSubmitSection').style.display = 'none';
             });
         }
 
-        function renderLeaderboardTable(list) {
-            let container = document.getElementById('leaderboardList');
+        function renderModalLeaderboard(list) {
+            let container = document.getElementById('modalLeaderboardList');
             if (!list || list.length === 0) {
                 container.innerHTML = '<div style="text-align:center; color:#777;">No scores yet!</div>';
                 return;
@@ -546,6 +625,28 @@
                 </div>`;
             });
             container.innerHTML = html;
+        }
+
+        function loadTabLeaderboard(gameName, btnElement) {
+            if (btnElement) {
+                document.querySelectorAll('.lb-tab-btn').forEach(b => b.classList.remove('active-tab'));
+                btnElement.classList.add('active-tab');
+            }
+            getLeaderboardData(gameName, (list) => {
+                let container = document.getElementById('globalLeaderboardList');
+                if (!list || list.length === 0) {
+                    container.innerHTML = '<div style="text-align:center; color:#777; padding:15px;">No high scores logged yet. Be the first!</div>';
+                    return;
+                }
+                let html = '';
+                list.forEach((item, idx) => {
+                    html += `<div class="lb-row">
+                        <span class="lb-rank">#${idx + 1} ${item.name}</span>
+                        <span style="color:#00ffcc;">${item.score} PTS</span>
+                    </div>`;
+                });
+                container.innerHTML = html;
+            });
         }
 
         function restartCurrentGame() {
@@ -610,6 +711,10 @@
             currentGame = null;
             document.querySelectorAll('.content-section').forEach(s => s.classList.remove('active'));
             document.getElementById(screenId).classList.add('active');
+
+            if (screenId === 'leaderboard-screen') {
+                loadTabLeaderboard('snake');
+            }
         }
 
         function toggleTheme() {
@@ -634,9 +739,10 @@
                 logToTerminal(`<span style="color: #fff;">> ${cmdInput.value}</span>`);
                 cmdInput.value = '';
 
-                if(command === 'help') logToTerminal("Available: about, projects, skills, redzone, cat, clear");
+                if(command === 'help') logToTerminal("Available: about, projects, leaderboard, skills, redzone, cat, clear");
                 else if(command === 'about') switchScreen('about');
                 else if(command === 'projects') switchScreen('projects');
+                else if(command === 'leaderboard') switchScreen('leaderboard-screen');
                 else if(command === 'skills') switchScreen('skills');
                 else if(command === 'redzone') toggleTheme();
                 else if(command === 'clear') terminalLogs.innerHTML = '';
