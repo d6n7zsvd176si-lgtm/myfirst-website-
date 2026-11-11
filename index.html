@@ -101,6 +101,13 @@
             line-height: 1.2;
         }
 
+        #bootScreen { position: fixed; inset: 0; z-index: 99999; background: #000; color: #00ffff; font-family: 'VT323', monospace; font-size: 26px; line-height: 1.5; padding: 7vh 6vw; box-sizing: border-box; cursor: pointer; }
+        #bootBarWrap { display: flex; align-items: center; gap: 14px; margin-top: 22px; max-width: 700px; }
+        #bootTrack { flex: 1; height: 18px; border: 2px solid #00ffff; }
+        #bootBar { height: 100%; width: 0; background: #00ffff; transition: width .25s; }
+        #bootHint { position: absolute; left: 0; right: 0; bottom: 5vh; text-align: center; font-size: 18px; }
+        @media (max-width: 600px) { #bootScreen { font-size: 20px; } }
+
         .stick-frame { width: 100%; height: 560px; border: 4px solid #00ffff; border-radius: 10px; background: #222; display: block; }
         body.crimson-theme .stick-frame { border-color: #ff0000; }
         @media (max-width: 768px) { .stick-frame { height: 700px; } }
@@ -373,6 +380,12 @@
     </style>
 </head>
 <body>
+    <div id="bootScreen" aria-label="Site loading screen">
+        <div id="bootLog"></div>
+        <div id="bootBarWrap"><div id="bootTrack"><div id="bootBar"></div></div><span id="bootPct">0%</span></div>
+        <div id="bootHint">CLICK OR PRESS ANY KEY TO SKIP</div>
+    </div>
+    <script>try { if (sessionStorage.getItem('zoneBooted')) document.getElementById('bootScreen').style.display = 'none'; } catch (e) {}</script>
 
     <audio id="hoverSound" src="hoverSound.mp3"></audio>
     <audio id="clickSound" src="clickSound.mp3"></audio>
@@ -865,13 +878,14 @@
                 logToTerminal(`<span style="color: #fff;">> ${escapeHtml(cmdInput.value)}</span>`);
                 cmdInput.value = '';
 
-                if(command === 'help') logToTerminal("Available: about, projects, leaderboard, skills, contact, github, fight, mute, redzone, cat, clear");
+                if(command === 'help') logToTerminal("Available: about, projects, leaderboard, skills, contact, github, fight, boot, mute, redzone, cat, clear");
                 else if(command === 'about') switchScreen('about');
                 else if(command === 'projects') switchScreen('projects');
                 else if(command === 'leaderboard') switchScreen('leaderboard-screen');
                 else if(command === 'skills') switchScreen('skills');
                 else if(command === 'contact') switchScreen('contact');
                 else if(command === 'fight' || command === 'stickman') launchStickman();
+                else if(command === 'boot') runBoot(true);
                 else if(command === 'github') logToTerminal('<a class="retro-link" href="https://github.com/d6n7zsvd176si-lgtm" target="_blank" rel="noopener noreferrer">github.com/d6n7zsvd176si-lgtm</a>');
                 else if(command === 'mute') toggleSound();
                 else if(command === 'redzone') toggleTheme();
@@ -906,6 +920,36 @@
         }, false);
 
         document.addEventListener('keydown', changeSnakeDirection);
+
+        // BOOT-UP ANIMATION (plays once per visit; type 'boot' in the terminal to replay)
+        let bootRun = 0;
+        async function runBoot(force) {
+            const el = document.getElementById('bootScreen'), log = document.getElementById('bootLog'),
+                  bar = document.getElementById('bootBar'), pct = document.getElementById('bootPct');
+            try { if (!force && sessionStorage.getItem('zoneBooted')) { el.style.display = 'none'; return; } } catch (e) {}
+            if (!force && window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches) { el.style.display = 'none'; return; }
+            const id = ++bootRun, sleep = ms => new Promise(r => setTimeout(r, ms));
+            const lines = ['> BOOTING ZONE OS v1.0...', '> LOADING PROJECTS.......... OK', '> LOADING GAMES............. OK', '> CONNECTING LEADERBOARD.... OK'];
+            const off = () => { el.removeEventListener('pointerdown', skip); document.removeEventListener('keydown', skip); };
+            const remember = () => { try { sessionStorage.setItem('zoneBooted', '1'); } catch (e) {} };
+            function skip() { bootRun++; off(); el.style.display = 'none'; remember(); }
+            log.innerHTML = ''; bar.style.width = '0'; pct.textContent = '0%';
+            el.style.transition = 'none'; el.style.opacity = 1; el.style.display = 'block'; void el.offsetWidth; el.style.transition = 'opacity .7s';
+            setTimeout(() => { if (id === bootRun) { el.addEventListener('pointerdown', skip); document.addEventListener('keydown', skip); } }, 80);
+            await sleep(250);
+            for (let i = 0; i < lines.length; i++) {
+                const d = document.createElement('div'); log.appendChild(d);
+                for (const ch of lines[i]) { if (id !== bootRun) return; d.textContent += ch; await sleep(14); }
+                const p = Math.round((i + 1) / lines.length * 100); bar.style.width = p + '%'; pct.textContent = p + '%';
+                await sleep(220);
+            }
+            const g = document.createElement('div'); g.textContent = '> ACCESS GRANTED'; g.style.marginTop = '12px'; log.appendChild(g);
+            for (let i = 0; i < 6; i++) { if (id !== bootRun) return; g.style.visibility = i % 2 ? 'visible' : 'hidden'; await sleep(140); }
+            g.style.visibility = 'visible'; await sleep(300);
+            if (id !== bootRun) return;
+            off(); remember(); el.style.opacity = 0;
+            setTimeout(() => { if (id === bootRun) el.style.display = 'none'; }, 750);
+        }
 
         function launchStickman() {
             switchScreen('stickman-screen');
@@ -1437,6 +1481,8 @@
                 ctx.fill();
             }
         }
+
+        runBoot(false);
     </script>
 </body>
 </html>
