@@ -872,25 +872,103 @@
             terminalLogs.scrollTop = terminalLogs.scrollHeight;
         }
 
+        // ---------------------------------------------------
+        // TERMINAL FUN: flip, date, uptime, guess, type, and a secret
+        // ---------------------------------------------------
+        let termMode = null, busy = false;
+        const sleepT = ms => new Promise(r => setTimeout(r, ms));
+        function termLine(html) {
+            const d = document.createElement('div'); d.innerHTML = html;
+            terminalLogs.appendChild(d); terminalLogs.scrollTop = terminalLogs.scrollHeight; return d;
+        }
+        function bestGet(key) { try { return parseFloat(localStorage.getItem(key)) || 0; } catch (e) { return 0; } }
+        function bestSet(key, v) { try { localStorage.setItem(key, String(v)); } catch (e) {} }
+
+        async function flipCoin() {
+            busy = true; const spin = ['/', '-', '\\', '|'], d = termLine('Flipping coin... /');
+            for (let i = 0; i < 12; i++) { await sleepT(90); d.textContent = 'Flipping coin... ' + spin[i % 4]; }
+            d.innerHTML = 'The coin landed on <span style="color:#ffff00;">' + (Math.random() < 0.5 ? 'HEADS' : 'TAILS') + '</span>.';
+            busy = false;
+        }
+
+        function uptimeText() {
+            const t = Math.floor(performance.now() / 1000), h = Math.floor(t / 3600), mi = Math.floor(t % 3600 / 60), se = t % 60;
+            return 'up ' + (h ? h + 'h ' : '') + mi + 'm ' + se + 's, 1 user (you), 0 bugs (probably)';
+        }
+
+        async function fakeDelete() {
+            busy = true;
+            termLine('<span style="color:#ff5555;">WARNING: deleting everything...</span>');
+            for (const dir of ['/bin', '/etc', '/home/zone/projects', '/home/zone/games', '/var/leaderboard', '/usr/stickman-fight']) {
+                const l = termLine('rm: removing ' + dir + ' ...'); await sleepT(280);
+                l.innerHTML = 'rm: removing ' + dir + ' ... <span style="color:#ff5555;">DONE</span>';
+            }
+            termLine('<span style="color:#ff5555;">KERNEL PANIC: nothing left to run</span>'); await sleepT(900);
+            termLine('...just kidding, backups are for cowards.');
+            busy = false;
+        }
+
+        function startGuess() {
+            const n = 1 + Math.floor(Math.random() * 10); let tries = 0;
+            logToTerminal('GUESS THE NUMBER: I am thinking of a number from 1 to 10. Type a guess, or "quit" to stop.');
+            termMode = (cmd) => {
+                if (cmd === 'quit' || cmd === 'exit') { logToTerminal('Game stopped. The number was ' + n + '.'); termMode = null; return; }
+                const g = parseInt(cmd, 10);
+                if (!/^\d+$/.test(cmd) || g < 1 || g > 10) { logToTerminal('Type a whole number from 1 to 10.'); return; }
+                tries++;
+                if (g === n) {
+                    const best = bestGet('zoneGuess10Best');
+                    logToTerminal('<span style="color:#ffff00;">Correct! It was ' + n + ', found in ' + tries + ' tries.</span>' + (!best || tries < best ? ' New best!' : ' Best: ' + best + '.'));
+                    if (!best || tries < best) bestSet('zoneGuess10Best', tries);
+                    termMode = null;
+                } else logToTerminal(g < n ? 'Too low. Go higher.' : 'Too high. Go lower.');
+            };
+        }
+
+        function startTyping() {
+            const texts = ['the quick brown fox jumps over the lazy dog', 'stickman fight has bosses weapons and big combos', 'never trust a bug that only happens on your friends laptop', 'press start to continue and keep your combo alive', 'code hard dodge harder and always back up your files'];
+            const text = texts[Math.floor(Math.random() * texts.length)]; let t0 = 0;
+            const first = () => { if (!t0) t0 = Date.now(); };
+            cmdInput.addEventListener('input', first);
+            logToTerminal('TYPING TEST: type this exactly, then press Enter (or type "quit" to stop):');
+            logToTerminal('<span style="color:#ffff00;">' + text + '</span>');
+            termMode = (cmd, raw) => {
+                cmdInput.removeEventListener('input', first); termMode = null;
+                if (cmd === 'quit' || cmd === 'exit') { logToTerminal('Test stopped.'); return; }
+                const secs = Math.max(0.5, (Date.now() - (t0 || Date.now() - 1000)) / 1000);
+                let ok = 0; for (let i = 0; i < Math.min(text.length, raw.length); i++) if (text[i] === raw[i]) ok++;
+                const acc = Math.round(100 * ok / Math.max(text.length, raw.length, 1));
+                const wpm = Math.round((text.length / 5) / (secs / 60) * acc / 100), best = bestGet('zoneTypeBest');
+                logToTerminal('Time: ' + secs.toFixed(1) + 's | Accuracy: ' + acc + '% | Speed: <span style="color:#ffff00;">' + wpm + ' WPM</span>' + (wpm > best ? ' New best!' : ' Best: ' + best + ' WPM.'));
+                if (wpm > best) bestSet('zoneTypeBest', wpm);
+            };
+        }
+
         cmdInput.addEventListener('keydown', (e) => {
             if (e.key === 'Enter') {
-                const command = cmdInput.value.trim().toLowerCase();
+                if (busy) return;
+                const raw = cmdInput.value.trim(), command = raw.toLowerCase();
                 logToTerminal(`<span style="color: #fff;">> ${escapeHtml(cmdInput.value)}</span>`);
                 cmdInput.value = '';
+                if (termMode) { termMode(command, raw); return; }
 
-                if(command === 'help') logToTerminal("Available: about, projects, leaderboard, skills, contact, github, fight, boot, mute, redzone, cat, clear");
+                if(command === 'help') logToTerminal("Available: about, projects, leaderboard, skills, contact, boot, flip, date, uptime, guess, type, mute, redzone, cat, clear");
                 else if(command === 'about') switchScreen('about');
                 else if(command === 'projects') switchScreen('projects');
                 else if(command === 'leaderboard') switchScreen('leaderboard-screen');
                 else if(command === 'skills') switchScreen('skills');
                 else if(command === 'contact') switchScreen('contact');
-                else if(command === 'fight' || command === 'stickman') launchStickman();
                 else if(command === 'boot') runBoot(true);
-                else if(command === 'github') logToTerminal('<a class="retro-link" href="https://github.com/d6n7zsvd176si-lgtm" target="_blank" rel="noopener noreferrer">github.com/d6n7zsvd176si-lgtm</a>');
                 else if(command === 'mute') toggleSound();
                 else if(command === 'redzone') toggleTheme();
                 else if(command === 'clear') terminalLogs.innerHTML = '';
                 else if(command === 'cat') logToTerminal(" ฅ^•ﻌ•^ฅ  Meow!");
+                else if(command === 'flip') flipCoin();
+                else if(command === 'date') logToTerminal(new Date().toLocaleString());
+                else if(command === 'uptime') logToTerminal(uptimeText());
+                else if(command === 'rm -rf /' || command === 'sudo rm -rf /' || command === 'rm -rf /*') fakeDelete();
+                else if(command === 'guess') startGuess();
+                else if(command === 'type') startTyping();
                 else if(command !== '') logToTerminal(`Unknown command: '${escapeHtml(command)}'`);
             }
         });
